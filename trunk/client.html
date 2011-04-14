@@ -10,11 +10,11 @@ font: normal 14px helvetica; color:#444444; }
 </style>
 <script>
 function validate() {
-fail = validateFirstname($("firstname").value)
-fail += validateLastname($("lastname").value)
-fail += validateUsername($("username").value)
-fail += validatePassword($("password").value)
-fail += validateEmail($("email").value)
+fail += validateEmail($("signup_email").value)
+fail += validatePassword($("signup_password").value)
+fail = validateFirstname($("signup_firstname").value)
+fail += validateLastname($("signup_lastname").value)
+
 if (fail == "") return true
 else { alert(fail); return false }
 }
@@ -27,7 +27,7 @@ var count = 1;
 var pending_request = {};
 
 function init(){
-  var host = "ws://localhost:8080/socket/newsocket/server4.php";
+  var host = "ws://localhost:8080/socket/newsocket/server.php";
   try{
     socket = new WebSocket(host);
     log('WebSocket - status '+socket.readyState);
