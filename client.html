@@ -41,7 +41,8 @@ function init() {
     log('WebSocket - status '+socket.readyState);
     socket.onopen    = function(msg){ log("Welcome - status "+this.readyState); };
     socket.onmessage = function(msg){ log("Received: "+msg.data); received(msg.data.substring(1)); };
-    socket.onclose   = function(msg){ log("Disconnected - status "+this.readyState); };
+    socket.onclose   = function(msg){ log("Disconnected - status "+this.readyState+ ". reconnecting"); 
+	setTimeout("init()", 500); };
   }
   catch(ex){ log(ex); }
   
@@ -83,6 +84,7 @@ function login() {
   send(request, function(response) {
     if (response.code == "success") {
       show("activeForm");
+      whoisonline();
     } else {
       alert(response.code + ": " + response.reason);
     }
