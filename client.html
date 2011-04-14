@@ -40,7 +40,7 @@ function init() {
     socket = new WebSocket(host);
     log('WebSocket - status '+socket.readyState);
     socket.onopen    = function(msg){ log("Welcome - status "+this.readyState); };
-    socket.onmessage = function(msg){ log("Received: "+msg.data); received(msg.data); };
+    socket.onmessage = function(msg){ log("Received: "+msg.data); received(msg.data.substring(1)); };
     socket.onclose   = function(msg){ log("Disconnected - status "+this.readyState); };
   }
   catch(ex){ log(ex); }
@@ -57,6 +57,9 @@ function show(formname) {
 
 function received(response) {
   console.log(response);
+  for (var i=0; i<response.length; ++i) {
+    console.log(i + "=" + response.charAt(i) + "\n");
+  }
   response = response.replace(/\t/g," ");
   response = JSON.parse(response);
   if (response.msg_id && pending_request[response.msg_id]) {
