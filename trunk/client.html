@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>WebSocket</title>
+<title>Voice and Video on Web</title>
 
 <style>
  html,body{font:normal 0.9em arial,helvetica;}
@@ -21,60 +21,77 @@ else { alert(fail); return false }
 </script>
 <script src="validate_functions.js"></script>
 <script src="json.js"></script>
-<script>
+<script type="javascript">
 var socket;
+var count = 1;
+var pending_request = {};
 
 function init(){
-  var host = "ws://x.x.x.x:8080/socket/newsocket/server4.php";
+  var host = "ws://localhost:8080/socket/newsocket/server4.php";
   try{
     socket = new WebSocket(host);
     log('WebSocket - status '+socket.readyState);
     socket.onopen    = function(msg){ log("Welcome - status "+this.readyState); };
-    socket.onmessage = function(msg){ log("Received: "+msg.data); };
+    socket.onmessage = function(msg){ log("Received: "+msg.data); received(msg.data); };
     socket.onclose   = function(msg){ log("Disconnected - status "+this.readyState); };
   }
   catch(ex){ log(ex); }
-// $("msg").focus();
+  
+  $("login_email").focus();
 }
 
-function register() {
-  var username = $("username").value;
-  var firstname = $("firstname").value;
-  var lastname = $("lastname").value;
-  var password = $("password").value;
-  var email = $("email").value;
-
-  var param = {"username": username , "firstname" : firstname , "lastname" : lastname , "password" : password , "email" : email};
-
-  //try { socket.send('POST /login/' + username + JSONstringify(param));} catch (ex) { log(ex); } //this is what we used initially
-  //Dont think the stringify method works.....
-//try { socket.send('POST /login/' + JSON.stringify(param));} catch (ex) { log(ex); }
-try { socket.send(JSON.stringify(param));} catch (ex) { log(ex); }
- //try { socket.send('POST /login/' + param);} catch (ex) { log(ex); }
+// show one of loginForm, signupForm or activeForm
+function show(formname) {
+	$('loginForm').style.visibility = formname == 'loginForm' ? 'visible' : 'hidden';
+    $('signupForm').style.visibility = formname == 'signupForm' ? 'visible' : 'hidden';
+	$('activeForm').style.visibility = formname == 'activeForm' ? 'visible' : 'hidden';
 }
 
-function whoisonline() {
-  username = $("msg").value;
-  if (!username) { alert("Please type a username first"); return; }
-  $("msg").value = "";
- // try { socket.send('GET /login' + username ); } catch (ex) { log(ex); }
-  try { socket.send('GET /login'); } catch (ex) { log(ex); }
+function send(request, response_callback) {
+  request.msg_id = count++;
+  pending_request[request.msg_id] = response_callback;
+    
+  //try { socket.send(JSON.stringify(obj)); } catch (ex) { log(ex); }
+  
+  var response = {"msg_id": request.msg_id, "code": "success"};
+  setTimeout("received(response)", 3000);
 }
 
-function send(){
-  var txt,msg;
-  txt = $("msg");
-  msg = txt.value;
-  if(!msg){ alert("Message can not be empty"); return; }
-  txt.value="";
-  txt.focus();
-  try{ socket.send(msg); log('Sent: '+msg); } catch(ex){ log(ex); }
+function received(response) {
+  if (response.msg_id &amp;&amp; pending_request[response.msg_id]) {
+    pending_request[response.msg_id](response);
+    delete pending_request[response.msg_id];
+  }
 }
-function quit(){
-  log("Goodbye!");
-  socket.close();
-  socket=null;
+
+function login() {
+  var request = {"method": "POST", "resource": "/contact", 
+                 "email" : $("login_email").value,  "password" : $("login_password").value};
+  send(request, function(response) {
+    if (response.code == "success") {
+      show("activeForm");
+    } else {
+      log(response.code + ": " + response.reason);
+    }
+    // do something
+  });
 }
+
+function signup() {
+  var request = {"method": "POST", "resource": "/user", 
+                 "email" : $("signup_email").value,  "password" : $("signup_password").value
+                 "firstname" : $("signup_firstname").value, "lastname" : $("signup_lastname").value};
+  send(request, function(response) {
+    if (response.code == "success") {
+      show("loginForm");
+      $("login_email").value = $("signup_email").value;
+      $("login_password").value = $("signup_password").value;
+    } else {
+      log(response.code + ": " + response.reason);
+    }
+  });
+}
+
 
 // Utilities
 function $(id){ return document.getElementById(id); }
@@ -84,28 +101,64 @@ function onkey(event){ if(event.keyCode==13){ send(); } }
 
 </head>
 <body onload="init()">
- <h3>WebSocket v2.00</h3>
- <div id="log"></div>
- <div>
- <table class="signup" border="0" cellpadding="2"
-cellspacing="5" bgcolor="#eeeeee">
-<th colspan="2" align="center">Signup Form</th>
-<form method="post" action="">
-<tr><td>Firstname</td><td><input type="text" maxlength="32"
-name="firstname" id="firstname" /></td></tr>
-<tr><td>Lastname</td><td><input type="text" maxlength="32"
-name="lastname" id="lastname" /></td></tr>
-<tr><td>Username</td><td><input type="text" maxlength="16"
-name="username" id="username" /></td></tr>
-<tr><td>Password</td><td><input type="password" maxlength="20"
-name="password" id="password" /></td></tr>
-<tr><td>Email</td><td><input type="text" maxlength="64"
-name="email" id="email"/></td></tr>
-<tr><td colspan="1" align="center">
-<input type="button" value="Register" onclick="if (validate()){register();}"/></td>
-<td colspan="1" align="center">
-<input type="submit" value="Who's online?" /></td>
-</tr>
-</form></table></div>
+ <h3>Voice and Video on Web</h3>
+ 
+ <div id="loginForm" style="position:absolute; left: 20px; top: 50px;">
+  <table class="signup" border="0" cellpadding="2" cellspacing="5" bgcolor="#eeeeee">
+    <th colspan="2" align="center">Login</th>
+    <tr>
+	  <td>Email</td>
+	  <td><input type="text" maxlength="64" id="login_email"/></td>
+	</tr>
+    <tr>
+	  <td>Password</td>
+	  <td><input type="password" maxlength="20" id="login_password" /></td>
+	</tr>
+    <tr>
+	 <td align="center"><button onclick="if (validate('login')) { login(); }">Login</button></td>
+     <td align="center"><button onclick="show('signupForm')">New user?</button</td>
+    </tr>
+  </table>
+ </div>
+ 
+ <div id="signupForm" style="position:absolute; left: 20px; top: 50px; visibility: hidden;">
+  <table class="signup" border="0" cellpadding="2" cellspacing="5" bgcolor="#eeeeee">
+    <th colspan="2" align="center">Signup Form</th>
+    <tr>
+	  <td>Email</td>
+	  <td><input type="text" maxlength="64" id="signup_email"/></td>
+	</tr>
+    <tr>
+	  <td>Password</td>
+	  <td><input type="password" maxlength="20" id="signup_password" /></td>
+	</tr>
+    <tr>
+	  <td>Firstname</td>
+	  <td><input type="text" maxlength="32" id="signup_firstname" /></td>
+	</tr>
+    <tr>
+	  <td>Lastname</td>
+      <td><input type="text" maxlength="32" id="signup_lastname" /></td>
+	</tr>
+    <tr>
+	 <td align="center"><button onclick="if (validate('signup')) { signup(); }">Sign up</button></td>
+     <td align="center"><button onclick="show('loginForm')">Cancel</button></td>
+    </tr>
+  </table>
+ </div>
+ 
+ <div id="activeForm" style="position:absolute; left: 20px; top: 50px; visibility: hidden; bgcolor: #eeeeee">
+   <div id="userlistBox" style="position:absolute; left: 30px; top:60px; width: 100px;">
+   </div>
+   <div id="historyBox" style="position:absolute; left: 140px; top: 60px;">
+   </div>
+ </div>
+ 
+ 
+ <div style="position:absolute; top:10px; left:600px; border: 1px solid #cfcfcf; width: 400px; height: 600px;">
+	<b>Trace</b><br/>
+    <div id="log"></div>
+ </div>
+ 
 </body>
 </html>
