@@ -9,25 +9,33 @@
 font: normal 14px helvetica; color:#444444; }
 </style>
 <script>
-function validate() {
-fail += validateEmail($("signup_email").value)
-fail += validatePassword($("signup_password").value)
-fail = validateFirstname($("signup_firstname").value)
-fail += validateLastname($("signup_lastname").value)
-
-if (fail == "") return true
-else { alert(fail); return false }
+function validate(command) {
+    if (command == "login") {
+        fail = validateEmail($("login_email").value)
+        fail += validatePassword($("login_password").value)
+    } else {
+        fail = validateEmail($("signup_email").value)
+        fail += validateFirstname($("signup_firstname").value)
+        fail += validateLastname($("signup_lastname").value)
+        fail += validatePassword($("signup_password").value)
+    }
+    if (fail == "") {
+        return true
+    } else { 
+        alert(fail); 
+        return false; 
+    }
 }
 </script>
 <script src="validate_functions.js"></script>
 <script src="json.js"></script>
-<script type="javascript">
+<script type="text/javascript">
 var socket;
 var count = 1;
 var pending_request = {};
 
-function init(){
-  var host = "ws://localhost:8080/socket/newsocket/server.php";
+function init() {
+  var host = "ws://localhost:8080/vvowproject/server.php";
   try{
     socket = new WebSocket(host);
     log('WebSocket - status '+socket.readyState);
@@ -47,21 +55,20 @@ function show(formname) {
 	$('activeForm').style.visibility = formname == 'activeForm' ? 'visible' : 'hidden';
 }
 
+function received(response) {
+  if (response.msg_id && pending_request[response.msg_id]) {
+    pending_request[response.msg_id](response);
+    delete pending_request[response.msg_id];
+  }
+}
+
 function send(request, response_callback) {
   request.msg_id = count++;
   pending_request[request.msg_id] = response_callback;
     
-  //try { socket.send(JSON.stringify(obj)); } catch (ex) { log(ex); }
+  try { socket.send(JSON.stringify(obj)); } catch (ex) { log(ex); }
   
-  var response = {"msg_id": request.msg_id, "code": "success"};
-  setTimeout("received(response)", 3000);
-}
-
-function received(response) {
-  if (response.msg_id &amp;&amp; pending_request[response.msg_id]) {
-    pending_request[response.msg_id](response);
-    delete pending_request[response.msg_id];
-  }
+  //setTimeout('var response = {"msg_id": ' + request.msg_id + ', "code": "success"}; received(response);', 3000);
 }
 
 function login() {
@@ -71,7 +78,7 @@ function login() {
     if (response.code == "success") {
       show("activeForm");
     } else {
-      log(response.code + ": " + response.reason);
+      alert(response.code + ": " + response.reason);
     }
     // do something
   });
@@ -79,7 +86,7 @@ function login() {
 
 function signup() {
   var request = {"method": "POST", "resource": "/user", 
-                 "email" : $("signup_email").value,  "password" : $("signup_password").value
+                 "email" : $("signup_email").value,  "password" : $("signup_password").value,
                  "firstname" : $("signup_firstname").value, "lastname" : $("signup_lastname").value};
   send(request, function(response) {
     if (response.code == "success") {
@@ -87,7 +94,7 @@ function signup() {
       $("login_email").value = $("signup_email").value;
       $("login_password").value = $("signup_password").value;
     } else {
-      log(response.code + ": " + response.reason);
+      alert(response.code + ": " + response.reason);
     }
   });
 }
@@ -123,7 +130,7 @@ function onkey(event){ if(event.keyCode==13){ send(); } }
  
  <div id="signupForm" style="position:absolute; left: 20px; top: 50px; visibility: hidden;">
   <table class="signup" border="0" cellpadding="2" cellspacing="5" bgcolor="#eeeeee">
-    <th colspan="2" align="center">Signup Form</th>
+    <th colspan="2" align="center">New User Signup</th>
     <tr>
 	  <td>Email</td>
 	  <td><input type="text" maxlength="64" id="signup_email"/></td>
