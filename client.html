@@ -56,6 +56,9 @@ function show(formname) {
 }
 
 function received(response) {
+  console.log(response);
+  response = response.replace(/\t/g," ");
+  response = JSON.parse(response);
   if (response.msg_id && pending_request[response.msg_id]) {
     pending_request[response.msg_id](response);
     delete pending_request[response.msg_id];
@@ -66,7 +69,7 @@ function send(request, response_callback) {
   request.msg_id = count++;
   pending_request[request.msg_id] = response_callback;
     
-  try { socket.send(JSON.stringify(obj)); } catch (ex) { log(ex); }
+  try { socket.send(JSON.stringify(request)); } catch (ex) { log(ex); }
   
   //setTimeout('var response = {"msg_id": ' + request.msg_id + ', "code": "success"}; received(response);', 3000);
 }
