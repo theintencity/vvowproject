@@ -6,10 +6,21 @@ error_reporting(E_ALL);
 set_time_limit(0);
 ob_implicit_flush();
 
-$master = WebSocket("x.x.x.x", 8080);
+$master = WebSocket("127.0.0.1", 8080);
 $sockets = array($master);
 $users = array();
 $debug = false;
+
+$db_hostname = '64.131.109.97';
+$db_database = 'vowproject';
+$db_username = 'vowuser';
+$db_password = 'vowWebrtc';
+
+$db_server = connect_db();
+if (!$db_server) {
+    say("Failed to connect to database");
+    exit();
+}
 
 while (true) {
     $changed = $sockets;
@@ -24,7 +35,6 @@ while (true) {
                 connect($client);
             }
         } else {
-//      $bytes = @socket_recv($socket,$buffer,2048,0); ...initial code
             $bytes = socket_recv($socket, $buffer, 2048, 0);
             if ($bytes == 0) {
                 disconnect($socket);
@@ -41,43 +51,92 @@ while (true) {
 }
 
 //---------------------------------------------------------------
+function connect_db() {
+    global $db_hostname, $db_username, $db_password, $db_database;
+    $db_server = mysql_connect($db_hostname, $db_username, $db_password);
+    if (!$db_server) {
+        say("ERROR: " . "Unable to connect to MySQL: " . mysql_error());
+        return NULL;
+    }
+    mysql_select_db($db_database, $db_server);
+    return $db_server;
+}
+
+function disconnect_db() {
+    mysql_close($db_server);
+}
+
 function process($user, $msg) {
     $action = unwrap($msg);
     say("< " . $action);
+    
     $request_body = json_decode($action, true);
-  //  require_once 'login.php';
-    require 'login.php';
-    $db_server = mysql_connect($db_hostname, $db_username, $db_password);
-    if (!$db_server){
-     //   die(send($user->socket, "Unable to connect to MySQL: " . mysql_error()));
-        send($user->socket, "Unable to connect to MySQL: " . mysql_error());
-        disconnect($db_server);}
-    mysql_select_db($db_database, $db_server)
-      //      or die(send($user->socket, "Unable to select database: " . mysql_error()));
-      or  send($user->socket, "Unable to select database: " . mysql_error());
-    if (!empty($request_body) && array_key_exists("username", $request_body) && $request_body["username"] && array_key_exists("firstname", $request_body) && $request_body["firstname"]
-            && array_key_exists("lastname", $request_body) && array_key_exists("password", $request_body) && $request_body["password"] && array_key_exists("email", $request_body) && $request_body["email"]) {
-        $firstname = $request_body["firstname"];
-        $lastname = $request_body["lastname"];
-        $username = $request_body["username"];
-        $password = $request_body["password"];
-        $email = $request_body["email"];
-        $userid = $user->id;
-        $query = "INSERT INTO register VALUES" . "('$userid', '$username', '$firstname', '$lastname', '$password', '$email')";
+    
+    if (empty($request_body)) {
+        say("ERROR: invalid request body");
+        return;
     }
-    if (!mysql_query($query, $db_server)) {
-        send($user->socket, "INSERT failed: $query<br />" . mysql_error() . "<br /><br />");
+    
+    if (!array_key_exists("method", $request_body) || 
+        !array_key_exists("resource", $request_body) ||
+        !array_key_exists("msg_id", $request_body)) {
+        say("ERROR: missing mandatory property");
+        return;
+    }
+    
+    $method = $request_body["method"];
+    $resource = $request_body["resource"];
+    
+    $result = NULL;
+    
+    if ($method == "POST" && $resource == "/user") {
+        $result = do_signup($request_body);
+    } else if ($method == "POST" && $resource == "/contact") {
+        say("process login");
+        $result = do_login($request_body, $user);
     } else {
-        send($user->socket, "Registration was successful!");
+        // this is an unknown request
+        $result = array("code"=>"failed", "reason"=>"unknown command " . $method . " " . $resource);
     }
-    mysql_close($db_server);
+    
+    $result["msg_id"] = $request_body["msg_id"];
+    send($user->socket, json_encode($result));
+}
 
-    //        $all_info = "\n". "username: " . $username . " ; ". "firstname: " . $firstname . " ; ". "lastname: " . $lastname . " ; ". "email: " . $email ;
-    //    $all_info = $user->id . " : " . $username . " : ".  $firstname . " : ". $lastname .  " : ". $password . " : ".  $email ;
-    //  $user->param = $all_info;
-    // send($user->socket, "userid:" . $user->id . "  " . $user->param );
+function do_login($request, $user) {
+    $email = $request["email"];
+    $password = $request["password"];
+    $wsid = $user->id;
+    
+    $result = mysql_query(sprintf("SELECT email FROM user WHERE email='%s' AND password='%s'", 
+        mysql_real_escape_string($email), mysql_real_escape_string($password)));
+    if (!$result) {
+        return array("code"=>"failed", "reason"=>"user is not registered");
+    }
+    
+    mysql_query(sprintf("INSERT INTO contact (email, wsid) VALUES ('%s', '%s')", 
+        mysql_real_escape_string($email), mysql_real_escape_string($wsid)));
+    
+    return array("code"=>"success");
+}
 
-    return;
+function do_signup($request) {
+    $email = $request["email"];
+    $firstname = $request["firstname"];
+    $lastname = $request["lastname"];
+    $password = $request["password"];
+
+    $result = mysql_query(sprintf("SELECT email FROM user WHERE email='%s'", 
+        mysql_real_escape_string($email)));
+    if ($result) {
+        return array("code"=>"failed", "reason"=>"user is already registered");
+    }
+    
+    mysql_query(sprintf("INSERT INTO user (email, password, firstname, lastname) VALUES ('%s', '%s', '%s', '%s')", 
+        mysql_real_escape_string($email), mysql_real_escape_string($password),
+        mysql_real_escape_string($firstname), mysql_real_escape_string($lastname)));
+    
+    return array("code"=>"success");
 }
 
 function send($client, $msg) {
