@@ -94,6 +94,8 @@ function process($user, $msg) {
     } else if ($method == "POST" && $resource == "/contact") {
         say("process login");
         $result = do_login($request_body, $user);
+    } else if ($method == "GET" && $resource == "/contact") {
+        say("process whoisonline");
     } else {
         // this is an unknown request
         $result = array("code"=>"failed", "reason"=>"unknown command " . $method . " " . $resource);
