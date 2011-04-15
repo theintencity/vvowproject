@@ -11,7 +11,7 @@ $sockets = array($master);
 $users = array();
 $debug = false;
 
-$db_hostname = '64.131.109.97';
+$db_hostname = 'x.x.x.x';
 $db_database = 'vowproject';
 $db_username = 'vowuser';
 $db_password = 'vowWebrtc';
