@@ -12,9 +12,9 @@ $users = array();
 $debug = false;
 
 $db_hostname = 'x.x.x.x';
-$db_database = 'vowproject';
-$db_username = 'vowuser';
-$db_password = 'vowWebrtc';
+$db_database = 'somedb';
+$db_username = 'someuser';
+$db_password = 'somepw';
 
 $db_server = connect_db();
 if (!$db_server) {
