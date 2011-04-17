@@ -1,179 +1,210 @@
 <html>
-<head>
-<title>Voice and Video on Web</title>
+    <head>
+        <title>Voice and Video on Web</title>
 
-<style>
- html,body{font:normal 0.9em arial,helvetica;}
- #msg {width:330px;}
- .signup { border: 1px solid #999999;
-font: normal 14px helvetica; color:#444444; }
-</style>
-<script>
-function validate(command) {
-    if (command == "login") {
-        fail = validateEmail($("login_email").value)
-        fail += validatePassword($("login_password").value)
-    } else {
-        fail = validateEmail($("signup_email").value)
-        fail += validateFirstname($("signup_firstname").value)
-        fail += validateLastname($("signup_lastname").value)
-        fail += validatePassword($("signup_password").value)
-    }
-    if (fail == "") {
-        return true
-    } else { 
-        alert(fail); 
-        return false; 
-    }
-}
-</script>
-<script src="validate_functions.js"></script>
-<script src="json.js"></script>
-<script type="text/javascript">
-var socket;
-var count = 1;
-var pending_request = {};
+        <style>
+            html,body{font:normal 0.9em arial,helvetica;}
+            #msg {width:330px;}
+            .signup { border: 1px solid #999999;
+                      font: normal 14px helvetica; color:#444444; }
+            </style>
+            <script>
+                function validate(command) {
+                    if (command == "login") {
+                        fail = validateEmail($("login_email").value)
+                        fail += validatePassword($("login_password").value)
+                    } else {
+                        fail = validateEmail($("signup_email").value)
+                        fail += validateFirstname($("signup_firstname").value)
+                        fail += validateLastname($("signup_lastname").value)
+                        fail += validatePassword($("signup_password").value)
+                    }
+                    if (fail == "") {
+                        return true
+                    } else {
+                        alert(fail);
+                        return false;
+                    }
+                }
+            </script>
+            <script src="validate_functions.js"></script>
+            <script src="json.js"></script>
+            <script type="text/javascript">
+                var socket;
+                var count = 1;
+                var pending_request = {};
 
-function init() {
-  var host = "ws://localhost:8080/vvowproject/server.php";
-  try{
-    socket = new WebSocket(host);
-    log('WebSocket - status '+socket.readyState);
-    socket.onopen    = function(msg){ log("Welcome - status "+this.readyState); };
-    socket.onmessage = function(msg){ log("Received: "+msg.data); received(msg.data.substring(1)); };
-    socket.onclose   = function(msg){ log("Disconnected - status "+this.readyState+ ". reconnecting"); 
-	setTimeout("init()", 500); };
-  }
-  catch(ex){ log(ex); }
-  
-  $("login_email").focus();
-}
+                function init() {
+                    var host = "ws://localhost:8080/socket/newsocket/server.php";
+                    try{
+                        socket = new WebSocket(host);
+                        log('WebSocket - status '+socket.readyState);
+                        socket.onopen    = function(msg){ log("Welcome - status "+this.readyState); };
+                        socket.onmessage = function(msg){ log("Received: "+msg.data); received(msg.data.substring(1)); };
+                        socket.onclose   = function(msg){ log("Disconnected - status "+this.readyState+ ". reconnecting");
+                            setTimeout("init()", 500);};
+                    }
+                    catch(ex){ log(ex); }
 
-// show one of loginForm, signupForm or activeForm
-function show(formname) {
-	$('loginForm').style.visibility = formname == 'loginForm' ? 'visible' : 'hidden';
-    $('signupForm').style.visibility = formname == 'signupForm' ? 'visible' : 'hidden';
-	$('activeForm').style.visibility = formname == 'activeForm' ? 'visible' : 'hidden';
-}
+                    $("login_email").focus();
+                }
 
-function received(response) {
-  console.log(response);
-  for (var i=0; i<response.length; ++i) {
-    console.log(i + "=" + response.charAt(i) + "\n");
-  }
-  response = response.replace(/\t/g," ");
-  response = JSON.parse(response);
-  if (response.msg_id && pending_request[response.msg_id]) {
-    pending_request[response.msg_id](response);
-    delete pending_request[response.msg_id];
-  }
-}
+    //            function limit(){
+    //            $l = count(init()) <10;
+    //            if ($l>10){quit();}
+    //            }
 
-function send(request, response_callback) {
-  request.msg_id = count++;
-  pending_request[request.msg_id] = response_callback;
-    
-  try { socket.send(JSON.stringify(request)); } catch (ex) { log(ex); }
-  
-  //setTimeout('var response = {"msg_id": ' + request.msg_id + ', "code": "success"}; received(response);', 3000);
-}
-
-function login() {
-  var request = {"method": "POST", "resource": "/contact", 
-                 "email" : $("login_email").value,  "password" : $("login_password").value};
-  send(request, function(response) {
-    if (response.code == "success") {
-      show("activeForm");
-      whoisonline();
-    } else {
-      alert(response.code + ": " + response.reason);
-    }
-    // do something
-  });
-}
-
-function signup() {
-  var request = {"method": "POST", "resource": "/user", 
-                 "email" : $("signup_email").value,  "password" : $("signup_password").value,
-                 "firstname" : $("signup_firstname").value, "lastname" : $("signup_lastname").value};
-  send(request, function(response) {
-    if (response.code == "success") {
-      show("loginForm");
-      $("login_email").value = $("signup_email").value;
-      $("login_password").value = $("signup_password").value;
-    } else {
-      alert(response.code + ": " + response.reason);
-    }
-  });
-}
+    //            function quit(){
+    //                log("Disconnected - status "+this.readyState);
+    //                socket.close();
+    //                socket=null;
+    //            }
 
 
-// Utilities
-function $(id){ return document.getElementById(id); }
-function log(msg){ $("log").innerHTML+="<br>"+msg; }
-function onkey(event){ if(event.keyCode==13){ send(); } }
-</script>
+                // show one of loginForm, signupForm or activeForm
+                function show(formname) {
+                    $('loginForm').style.visibility = formname == 'loginForm' ? 'visible' : 'hidden';
+                    $('signupForm').style.visibility = formname == 'signupForm' ? 'visible' : 'hidden';
+                    $('activeForm').style.visibility = formname == 'activeForm' ? 'visible' : 'hidden';
+         //        $('userlistBox').style.visibility = formname == 'userlistBox' ? 'visible' : 'hidden';
+                }
 
-</head>
-<body onload="init()">
- <h3>Voice and Video on Web</h3>
- 
- <div id="loginForm" style="position:absolute; left: 20px; top: 50px;">
-  <table class="signup" border="0" cellpadding="2" cellspacing="5" bgcolor="#eeeeee">
-    <th colspan="2" align="center">Login</th>
-    <tr>
-	  <td>Email</td>
-	  <td><input type="text" maxlength="64" id="login_email"/></td>
-	</tr>
-    <tr>
-	  <td>Password</td>
-	  <td><input type="password" maxlength="20" id="login_password" /></td>
-	</tr>
-    <tr>
-	 <td align="center"><button onclick="if (validate('login')) { login(); }">Login</button></td>
-     <td align="center"><button onclick="show('signupForm')">New user?</button</td>
-    </tr>
-  </table>
- </div>
- 
- <div id="signupForm" style="position:absolute; left: 20px; top: 50px; visibility: hidden;">
-  <table class="signup" border="0" cellpadding="2" cellspacing="5" bgcolor="#eeeeee">
-    <th colspan="2" align="center">New User Signup</th>
-    <tr>
-	  <td>Email</td>
-	  <td><input type="text" maxlength="64" id="signup_email"/></td>
-	</tr>
-    <tr>
-	  <td>Password</td>
-	  <td><input type="password" maxlength="20" id="signup_password" /></td>
-	</tr>
-    <tr>
-	  <td>Firstname</td>
-	  <td><input type="text" maxlength="32" id="signup_firstname" /></td>
-	</tr>
-    <tr>
-	  <td>Lastname</td>
-      <td><input type="text" maxlength="32" id="signup_lastname" /></td>
-	</tr>
-    <tr>
-	 <td align="center"><button onclick="if (validate('signup')) { signup(); }">Sign up</button></td>
-     <td align="center"><button onclick="show('loginForm')">Cancel</button></td>
-    </tr>
-  </table>
- </div>
- 
- <div id="activeForm" style="position:absolute; left: 20px; top: 50px; visibility: hidden; bgcolor: #eeeeee">
-   <div id="userlistBox" style="position:absolute; left: 30px; top:60px; width: 100px;">
-   </div>
-   <div id="historyBox" style="position:absolute; left: 140px; top: 60px;">
-   </div>
- </div>
- 
- 
- <div style="position:absolute; top:10px; left:600px; border: 1px solid #cfcfcf; width: 400px; height: 600px;">
-	<b>Trace</b><br/>
-    <div id="log"></div>
- </div>
- 
-</body>
+                function received(response) {
+                    console.log(response);
+                    for (var i=0; i<response.length; ++i) {
+                        console.log(i + "=" + response.charAt(i) + "\n");
+                    }
+                    response = response.replace(/\t/g," ");
+                    response = JSON.parse(response);
+                    if (response.msg_id && pending_request[response.msg_id]) {
+                        pending_request[response.msg_id](response);
+                        delete pending_request[response.msg_id];
+                    }
+                }
+
+                function send(request, response_callback) {
+                    request.msg_id = count++;
+                    pending_request[request.msg_id] = response_callback;
+
+                    try { socket.send(JSON.stringify(request)); } catch (ex) { log(ex); }
+
+                    //setTimeout('var response = {"msg_id": ' + request.msg_id + ', "code": "success"}; received(response);', 3000);
+                }
+
+                function login() {
+                    var request = {"method": "POST", "resource": "/contact",
+                        "email" : $("login_email").value,  "password" : $("login_password").value};
+                    send(request, function(response) {
+                        if (response.code == "success") {
+                            show('activeForm');
+                            var members = "";
+                            whoisonline(members.data);
+                        } else {
+                            alert(response.code + ": " + response.reason);
+                        }
+                        // do something
+                    });
+                }
+
+                function signup() {
+                    var request = {"method": "POST", "resource": "/user",
+                        "email" : $("signup_email").value,  "password" : $("signup_password").value,
+                        "firstname" : $("signup_firstname").value, "lastname" : $("signup_lastname").value};
+                    send(request, function(response) {
+                        if (response.code == "success") {
+                            show("loginForm");
+                            $("login_email").value = $("signup_email").value;
+                            $("login_password").value = $("signup_password").value;
+                        } else {
+                            alert(response.code + ": " + response.reason);
+                        }
+                    });
+                }
+
+              function whoisonline(members){
+            var request = {"method": "GET", "resource": "/contact"};
+                    send(request, function(response) {
+                        if (response.code == "success") {
+                        $("userlistBox").innerHTML+="<br>" +members;
+                   } else {
+                            alert(response.code + ": " + response.reason);
+                        }
+                        // do something
+                    });
+          //        try{socket.send('GET/contact');} catch(ex){log(ex);}
+             }
+
+
+                // Utilities
+                function $(id){ return document.getElementById(id); }
+                function log(msg){ $("log").innerHTML+="<br>"+msg; }
+                function onkey(event){ if(event.keyCode==13){ send(); } }
+            </script>
+
+        </head>
+        <body onload="init()">
+            <h3>Voice and Video on Web</h3>
+
+            <div id="loginForm" style="position:absolute; left: 20px; top: 50px;">
+            <table class="signup" border="0" cellpadding="2" cellspacing="5" bgcolor="#eeeeee">
+                <th colspan="2" align="center">Login</th>
+                <tr>
+                    <td>Email</td>
+                    <td><input type="text" maxlength="64" id="login_email"/></td>
+                </tr>
+                <tr>
+                    <td>Password</td>
+                    <td><input type="password" maxlength="20" id="login_password" /></td>
+                </tr>
+                <tr>
+                    <td align="center"><button onclick="if (validate('login')) { login(); }">Login</button></td>
+                    <td align="center"><button onclick="show('signupForm')">New user?</button</td>
+                </tr>
+            </table>
+        </div>
+
+        <div id="signupForm" style="position:absolute; left: 20px; top: 50px; visibility: hidden;">
+            <table class="signup" border="0" cellpadding="2" cellspacing="5" bgcolor="#eeeeee">
+                <th colspan="2" align="center">New User Signup</th>
+                <tr>
+                    <td>Email</td>
+                    <td><input type="text" maxlength="64" id="signup_email"/></td>
+                </tr>
+                <tr>
+                    <td>Password</td>
+                    <td><input type="password" maxlength="20" id="signup_password" /></td>
+                </tr>
+                <tr>
+                    <td>Firstname</td>
+                    <td><input type="text" maxlength="32" id="signup_firstname" /></td>
+                </tr>
+                <tr>
+                    <td>Lastname</td>
+                    <td><input type="text" maxlength="32" id="signup_lastname" /></td>
+                </tr>
+                <tr>
+                    <td align="center"><button onclick="if (validate('signup')) { signup(); }">Sign up</button></td>
+                    <td align="center"><button onclick="show('loginForm')">Cancel</button></td>
+                </tr>
+            </table>
+        </div>
+
+        <div id="activeForm" style="position:absolute; left: 20px; top: 50px; visibility: hidden; background-color: #eeeeee; border: 1px solid #cfcfcf; width: 600px; height: 500px;">
+            <div id="userlistBox" style="position:absolute; left:5px; top:10px; width: 290px;">
+                <b>Members Online</b>
+              <div style="left: inherit; top: inherit; width: inherit;height: 300px; background-color: #ffffff; border: 1px solid #cfcfcf;"></div>
+            </div>
+            <div id="historyBox" style="position:absolute; left: 305px; top: 10px; width: 290px;">
+                <b>Chat Area</b>
+                <textarea cols="1" rows="20" style="left: inherit; top: inherit; width: inherit;"></textarea>
+            </div>
+        </div>
+
+
+        <div style="position:absolute; top:10px; left:700px; border: 1px solid #cfcfcf; width: 400px; height: 600px;">
+            <b>Trace</b><br/> <div id="log"></div>
+      <!--      <textarea id="log" style="top:15px; left:605px; border: 1px solid #cfcfcf; width: 380px; height: 580px;"></textarea> -->
+        </div>
+
+    </body>
 </html>
