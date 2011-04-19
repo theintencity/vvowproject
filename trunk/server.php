@@ -6,15 +6,15 @@ error_reporting(E_ALL);
 set_time_limit(0);
 ob_implicit_flush();
 
-$master = WebSocket("127.0.0.1", 8080);
+$master = WebSocket("localhost", 8080);
 $sockets = array($master);
 $users = array();
 $debug = false;
 
 $db_hostname = 'localhost';
-$db_database = 'somedb';
-$db_username = 'someuser';
-$db_password = 'somepw';
+$db_database = 'vowproject';
+$db_username = 'vowuser';
+$db_password = 'vowWebrtc';
 
 $db_server = connect_db();
 if (!$db_server) {
@@ -78,8 +78,8 @@ function process($user, $msg) {
     }
 
     if (!array_key_exists("method", $request_body) ||
-        !array_key_exists("resource", $request_body) ||
-        !array_key_exists("msg_id", $request_body)) {
+            !array_key_exists("resource", $request_body) ||
+            !array_key_exists("msg_id", $request_body)) {
         say("ERROR: missing mandatory property");
         return;
     }
@@ -97,9 +97,12 @@ function process($user, $msg) {
     } else if ($method == "GET" && $resource == "/contact") {
         say("process whoisonline");
         $result = do_whoisonline($request_body, $user);
+    } else if ($method == "DELETE" && $resource == "/contact") {
+        say("process logout");
+        $result = do_logout($request_body, $user);
     } else {
         // this is an unknown request
-        $result = array("code"=>"failed", "reason"=>"unknown command " . $method . " " . $resource);
+        $result = array("code" => "failed", "reason" => "unknown command " . $method . " " . $resource);
     }
 
     $result["msg_id"] = $request_body["msg_id"];
@@ -113,16 +116,14 @@ function do_login($request, $user) {
     $sock_id = $user->socket;
 
     $result = mysql_query(sprintf("SELECT email FROM user WHERE email='%s' AND password='%s'",
-        mysql_real_escape_string($email), mysql_real_escape_string($password)));
+                            mysql_real_escape_string($email), mysql_real_escape_string($password)));
     $result_true = mysql_num_rows($result);
     if (!$result_true) {
-        return array("code"=>"failed", "reason"=>"user is not registered");
+        return array("code" => "failed", "reason" => "user is not registered");
     }
-//    mysql_query(sprintf("INSERT INTO contact (email, wsid) VALUES ('%s', '%s')",
-//        mysql_real_escape_string($email), mysql_real_escape_string($wsid)));
     mysql_query(sprintf("INSERT INTO contact (email, wsid,sockid) VALUES " . "('$email','$wsid','$sock_id')"));
 
-    return array("code"=>"success");
+    return array("code" => "success");
 }
 
 function do_signup($request) {
@@ -132,47 +133,49 @@ function do_signup($request) {
     $password = $request["password"];
 
     $result = mysql_query(sprintf("SELECT email FROM user WHERE email='%s'",
-        mysql_real_escape_string($email)));
+                            mysql_real_escape_string($email)));
     $result_true = mysql_num_rows($result);
     if ($result_true) {
-        return array("code"=>"failed", "reason"=>"user is already registered");
-       }
-        mysql_query(sprintf("INSERT INTO user (email, password, firstname, lastname) VALUES ('%s', '%s', '%s', '%s')",
-        mysql_real_escape_string($email), mysql_real_escape_string($password),
-        mysql_real_escape_string($firstname), mysql_real_escape_string($lastname)));
-        return array("code"=>"success");
+        return array("code" => "failed", "reason" => "user is already registered");
+    }
+    mysql_query(sprintf("INSERT INTO user (email, password, firstname, lastname) VALUES ('%s', '%s', '%s', '%s')",
+                    mysql_real_escape_string($email), mysql_real_escape_string($password),
+                    mysql_real_escape_string($firstname), mysql_real_escape_string($lastname)));
+    return array("code" => "success");
 }
 
-function do_whoisonline($request, $user){
-  $result = mysql_query("SELECT contact.email,firstname,lastname FROM user,contact WHERE user.email=contact.email");
-  $result_true = mysql_num_rows($result);
-  $member = mysql_fetch_row($result);
-  if(!$member){
-      return array("code"=>"failed", "reason"=>"not working");
+function do_logout($request, $user) {
+    $wsid = $user->id;
+    $sock_id = $user->socket;
+
+    $result = mysql_query(sprintf("SELECT wsid FROM contact WHERE wsid='%s'",
+                            mysql_real_escape_string($wsid)));
+    $result_true = mysql_num_rows($result);
+    if (!$result_true) {
+        return array("code" => "failed", "reason" => "Unknown Problem");
     }
- //   for ($j=0; $j <$result_true ; ++$j){
-       say($member);
-       return array("code"=>"success");
-//   if(!$member){
-//      return array("code"=>"failed", "reason"=>"not working");
-//    }
-//    for ($j=0; $j <$result_true ; ++$j){
-//      var row =
-//       echo "<table><tr> <th>Email</th> <th>FirstName</th><th>LastName</th></tr>";
-//       for ($j = 0 ; $j < $rows ; ++$j){
-//      $member = mysql_fetch_row($result);
-//        echo "<tr>";
-//        for ($k = 0 ; $k < 3 ; ++$k)
-//        echo "<td>$member[$k]</td>";
-//        echo "</tr>";
-//        }
-//        echo "</table>"
-//        ;
-//    }
-//        say($row);
-//       return array("code"=>"success");
-//
+    mysql_query(sprintf("DELETE FROM contact WHERE wsid='%s'", mysql_real_escape_string($wsid)));
+    return array("code" => "success");
 }
+
+function do_whoisonline($request, $user) {
+    $result = mysql_query("SELECT contact.email,firstname,lastname FROM user,contact WHERE user.email=contact.email");
+    $result_true = mysql_num_rows($result);
+
+    if (!$result_true) {
+        return array("code" => "failed", "reason" => "not working");
+    }
+    for ($j = 0; $j < $result_true; ++$j) {
+        $member = mysql_fetch_row($result);
+        $members = array_values($member);
+        $allmembers = implode(", ", $members);
+        say($allmembers);
+        // for ($k=0; $k<3)
+    }
+
+    return array("code" => "success", "contact" => $member);
+}
+
 function send($client, $msg) {
     say("> " . $msg);
     $msg = wrap($msg);

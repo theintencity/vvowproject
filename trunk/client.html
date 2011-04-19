@@ -49,16 +49,16 @@
                     $("login_email").focus();
                 }
 
-    //            function limit(){
-    //            $l = count(init()) <10;
-    //            if ($l>10){quit();}
-    //            }
+                //            function limit(){
+                //            $l = count(init()) <10;
+                //            if ($l>10){quit();}
+                //            }
 
-    //            function quit(){
-    //                log("Disconnected - status "+this.readyState);
-    //                socket.close();
-    //                socket=null;
-    //            }
+                //            function quit(){
+                //                log("Disconnected - status "+this.readyState);
+                //                socket.close();
+                //                socket=null;
+                //            }
 
 
                 // show one of loginForm, signupForm or activeForm
@@ -66,7 +66,7 @@
                     $('loginForm').style.visibility = formname == 'loginForm' ? 'visible' : 'hidden';
                     $('signupForm').style.visibility = formname == 'signupForm' ? 'visible' : 'hidden';
                     $('activeForm').style.visibility = formname == 'activeForm' ? 'visible' : 'hidden';
-         //        $('userlistBox').style.visibility = formname == 'userlistBox' ? 'visible' : 'hidden';
+                    //        $('userlistBox').style.visibility = formname == 'userlistBox' ? 'visible' : 'hidden';
                 }
 
                 function received(response) {
@@ -87,8 +87,6 @@
                     pending_request[request.msg_id] = response_callback;
 
                     try { socket.send(JSON.stringify(request)); } catch (ex) { log(ex); }
-
-                    //setTimeout('var response = {"msg_id": ' + request.msg_id + ', "code": "success"}; received(response);', 3000);
                 }
 
                 function login() {
@@ -97,12 +95,10 @@
                     send(request, function(response) {
                         if (response.code == "success") {
                             show('activeForm');
-                            var members = "";
-                            whoisonline(members.data);
+                            whoisonline();
                         } else {
                             alert(response.code + ": " + response.reason);
                         }
-                        // do something
                     });
                 }
 
@@ -121,19 +117,32 @@
                     });
                 }
 
-              function whoisonline(members){
-            var request = {"method": "GET", "resource": "/contact"};
+                function whoisonline(members){
+                    var request = {"method": "GET", "resource": "/contact"};
                     send(request, function(response) {
-                        if (response.code == "success") {
-                        $("userlistBox").innerHTML+="<br>" +members;
-                   } else {
+                        if (response.contact == '$member') {
+                            var members ="";
+                            for (var i in response.contact){
+                                var c = response.contact[i];
+                                members += "<b>" + c.email + "</b>: " + c.firstname + " " + c.lastname + "<br/>";
+                            }
+
+                            $("userlistBox").innerHTML+= members;
+                        } else {
                             alert(response.code + ": " + response.reason);
                         }
-                        // do something
                     });
-          //        try{socket.send('GET/contact');} catch(ex){log(ex);}
-             }
-
+                }
+                function logout() {
+                    var request = {"method": "DELETE", "resource": "/contact"};
+                    send(request, function(response) {
+                        if (response.code == "success") {
+                            show('loginForm');
+                        } else {
+                            alert(response.code + ": " + response.reason);
+                        }
+                    });
+                }
 
                 // Utilities
                 function $(id){ return document.getElementById(id); }
@@ -190,20 +199,19 @@
         </div>
 
         <div id="activeForm" style="position:absolute; left: 20px; top: 50px; visibility: hidden; background-color: #eeeeee; border: 1px solid #cfcfcf; width: 600px; height: 500px;">
-            <div id="userlistBox" style="position:absolute; left:5px; top:10px; width: 290px;">
+            <div id="userlistBox" style="position:absolute; left: 5px; top: 10px; width: 290px;height: 400px; background-color: #ffffff; border: 1px solid #cfcfcf; padding: 5px 0px 0px 5px;">
                 <b>Members Online</b>
-              <div style="left: inherit; top: inherit; width: inherit;height: 300px; background-color: #ffffff; border: 1px solid #cfcfcf;"></div>
             </div>
-            <div id="historyBox" style="position:absolute; left: 305px; top: 10px; width: 290px;">
-                <b>Chat Area</b>
-                <textarea cols="1" rows="20" style="left: inherit; top: inherit; width: inherit;"></textarea>
+            <textarea cols="" rows=""  id="historyBox" style="position:absolute; left: 305px; top: 10px; width: 290px; height: 400px;">Chat Area</textarea>
+            <div id="logOut" style="position:absolute; left: 5px; top: 450px;">
+                <button onclick="logout();">Logout</button>
             </div>
         </div>
 
 
         <div style="position:absolute; top:10px; left:700px; border: 1px solid #cfcfcf; width: 400px; height: 600px;">
             <b>Trace</b><br/> <div id="log"></div>
-      <!--      <textarea id="log" style="top:15px; left:605px; border: 1px solid #cfcfcf; width: 380px; height: 580px;"></textarea> -->
+            <!--      <textarea id="log" style="top:15px; left:605px; border: 1px solid #cfcfcf; width: 380px; height: 580px;"></textarea> -->
         </div>
 
     </body>
