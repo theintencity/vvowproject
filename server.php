@@ -6,15 +6,15 @@ error_reporting(E_ALL);
 set_time_limit(0);
 ob_implicit_flush();
 
-$master = WebSocket("localhost", 8080);
+$master = WebSocket("127.0.0.1", 8080);
 $sockets = array($master);
 $users = array();
 $debug = false;
 
 $db_hostname = 'localhost';
-$db_database = 'vowproject';
-$db_username = 'vowuser';
-$db_password = 'vowWebrtc';
+$db_database = 'xxxproject';
+$db_username = 'xxxx';
+$db_password = 'xxxx1234';
 
 $db_server = connect_db();
 if (!$db_server) {
@@ -102,12 +102,15 @@ function process($user, $msg) {
         $result = do_logout($request_body, $user);
     } else {
         // this is an unknown request
+        header("Content-type: application/json");
         $result = array("code" => "failed", "reason" => "unknown command " . $method . " " . $resource);
     }
 
-    $result["msg_id"] = $request_body["msg_id"];
-    send($user->socket, json_encode($result));
-}
+    $result['msg_id'] = $request_body['msg_id'];
+    header("Content-type: application/json");
+    $user->param = json_encode($result);
+    send($user->socket,$user->param);
+   }
 
 function do_login($request, $user) {
     $email = $request["email"];
@@ -119,11 +122,14 @@ function do_login($request, $user) {
                             mysql_real_escape_string($email), mysql_real_escape_string($password)));
     $result_true = mysql_num_rows($result);
     if (!$result_true) {
-        return array("code" => "failed", "reason" => "user is not registered");
+        header("Content-type: application/json");
+        return array("code" =>"failed", "reason" =>"user is not registered");
     }
+//    mysql_query(sprintf("INSERT INTO contact (email, wsid) VALUES ('%s', '%s')",
+//        mysql_real_escape_string($email), mysql_real_escape_string($wsid)));
     mysql_query(sprintf("INSERT INTO contact (email, wsid,sockid) VALUES " . "('$email','$wsid','$sock_id')"));
-
-    return array("code" => "success");
+    header("Content-type: application/json");
+    return array('code' =>'success');
 }
 
 function do_signup($request) {
@@ -136,12 +142,14 @@ function do_signup($request) {
                             mysql_real_escape_string($email)));
     $result_true = mysql_num_rows($result);
     if ($result_true) {
+        header("Content-type: application/json");
         return array("code" => "failed", "reason" => "user is already registered");
     }
     mysql_query(sprintf("INSERT INTO user (email, password, firstname, lastname) VALUES ('%s', '%s', '%s', '%s')",
                     mysql_real_escape_string($email), mysql_real_escape_string($password),
                     mysql_real_escape_string($firstname), mysql_real_escape_string($lastname)));
-    return array("code" => "success");
+    header("Content-type: application/json");
+    return array('code' => 'success');
 }
 
 function do_logout($request, $user) {
@@ -152,35 +160,34 @@ function do_logout($request, $user) {
                             mysql_real_escape_string($wsid)));
     $result_true = mysql_num_rows($result);
     if (!$result_true) {
+        header("Content-type: application/json");
         return array("code" => "failed", "reason" => "Unknown Problem");
     }
     mysql_query(sprintf("DELETE FROM contact WHERE wsid='%s'", mysql_real_escape_string($wsid)));
-    return array("code" => "success");
+    return array('code' =>'success');
 }
 
 function do_whoisonline($request, $user) {
     $result = mysql_query("SELECT contact.email,firstname,lastname FROM user,contact WHERE user.email=contact.email");
     $result_true = mysql_num_rows($result);
-
-    if (!$result_true) {
-        return array("code" => "failed", "reason" => "not working");
+    $members = array();
+        for ($j = 0; $j < $result_true; ++$j) {
+        $row = mysql_fetch_row($result);
+        $member = array("email" => $row[0], "firstname" => $row[1], "lastname" => $row[2]);
+        array_push($members, $member);
+        say($members);
     }
-    for ($j = 0; $j < $result_true; ++$j) {
-        $member = mysql_fetch_row($result);
-        $members = array_values($member);
-        $allmembers = implode(", ", $members);
-        say($allmembers);
-        // for ($k=0; $k<3)
-    }
-
-    return array("code" => "success", "contact" => $member);
+    header("Content-type: application/json");
+    return array('code' => 'success', 'contact' => $members);
 }
 
 function send($client, $msg) {
-    say("> " . $msg);
+    say(">".$msg);
     $msg = wrap($msg);
     socket_write($client, $msg, strlen($msg));
+
 }
+
 
 function WebSocket($address, $port) {
     $master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP) or die("socket_create() failed");
@@ -307,7 +314,8 @@ function say($msg="") {
 }
 
 function wrap($msg="") {
-    return chr(0) . $msg . chr(255);
+   return chr(0) . $msg . chr(255);
+  //  return $msg;
 }
 
 function unwrap($msg="") {
