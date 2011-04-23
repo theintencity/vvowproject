@@ -2,13 +2,14 @@
     <head>
         <title>Voice and Video on Web</title>
 
-        <style>
+        <style type="">
             html,body{font:normal 0.9em arial,helvetica;}
             #msg {width:330px;}
             .signup { border: 1px solid #999999;
                       font: normal 14px helvetica; color:#444444; }
             </style>
-            <script>
+            <script type="text/javascript">
+
                 function validate(command) {
                     if (command == "login") {
                         fail = validateEmail($("login_email").value)
@@ -27,21 +28,29 @@
                     }
                 }
             </script>
-            <script src="validate_functions.js"></script>
-            <script src="json.js"></script>
+            <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js" type="text/javascript"></script>
+            <script type="text/javascript" src="validate_functions.js"></script>
+            <script type="text/javascript" src="json.js"></script>
+            <script type="text/javascript" src="json2.js"></script>
+            <script type="text/javascript" src="json_parse.js"></script>
+            <script type="text/javascript" src="json_parse_state.js"></script>
+            <meta content="text/html; application/json; charset=utf-8" http-equiv="Content-Type" />
             <script type="text/javascript">
+
                 var socket;
                 var count = 1;
                 var pending_request = {};
 
                 function init() {
-                    var host = "ws://localhost:8080/socket/newsocket/server.php";
+                    var host = "ws://127.0.0.1:8080/socket/newsocket/server.php";
                     try{
                         socket = new WebSocket(host);
                         log('WebSocket - status '+socket.readyState);
-                        socket.onopen    = function(msg){ log("Welcome - status "+this.readyState); };
-                        socket.onmessage = function(msg){ log("Received: "+msg.data); received(msg.data.substring(1)); };
-                        socket.onclose   = function(msg){ log("Disconnected - status "+this.readyState+ ". reconnecting");
+                        socket.onopen    = function(msg){ log("Welcome - status"+this.readyState); };
+                        socket.onmessage = function(msg){ log("Received: "+msg.data); received(msg.data);};
+                        //     received(msg.data.substring(1));};
+                        //      if (msg.data.(1)!="{"){msg.data = "{"+msg.data}};
+                        socket.onclose   = function(msg){ log("Disconnected - status:"+this.readyState+ ".. reconnecting");
                             setTimeout("init()", 500);};
                     }
                     catch(ex){ log(ex); }
@@ -49,33 +58,46 @@
                     $("login_email").focus();
                 }
 
-                //            function limit(){
-                //            $l = count(init()) <10;
-                //            if ($l>10){quit();}
-                //            }
-
-                //            function quit(){
-                //                log("Disconnected - status "+this.readyState);
-                //                socket.close();
-                //                socket=null;
-                //            }
+                /*       function limit(){
+                            $l = count(init()) <10;
+                            if ($l>10){quit();}
+                            }
+                            function quit(){
+                                log("Disconnected - status "+this.readyState);
+                                socket.close();
+                                socket=null;
+                            }*/
 
 
                 // show one of loginForm, signupForm or activeForm
+
+
                 function show(formname) {
                     $('loginForm').style.visibility = formname == 'loginForm' ? 'visible' : 'hidden';
                     $('signupForm').style.visibility = formname == 'signupForm' ? 'visible' : 'hidden';
                     $('activeForm').style.visibility = formname == 'activeForm' ? 'visible' : 'hidden';
-                    //        $('userlistBox').style.visibility = formname == 'userlistBox' ? 'visible' : 'hidden';
                 }
 
                 function received(response) {
                     console.log(response);
-                    for (var i=0; i<response.length; ++i) {
+                    /*   for (var i=0; i<response.length; ++i) {
                         console.log(i + "=" + response.charAt(i) + "\n");
+                    } */
+                 //   response = response.replace(/\t/g," ");
+            //     response = JSON.stringify(response);
+            //     console.log(response);
+                       //   var response = eval("(function(){return " + response + ";})()");
+            //   console.log(response);
+
+                   //
+               //   console.log(response);
+                    //    response = eval('(' + response + ')');
+                    if(response.charAt(0)=='\u0000'){
+                        response = response.substring(1);
+                        response = JSON.parse(response);
+                    } else {
+                        response = JSON.parse(response);
                     }
-                    response = response.replace(/\t/g," ");
-                    response = JSON.parse(response);
                     if (response.msg_id && pending_request[response.msg_id]) {
                         pending_request[response.msg_id](response);
                         delete pending_request[response.msg_id];
@@ -86,19 +108,22 @@
                     request.msg_id = count++;
                     pending_request[request.msg_id] = response_callback;
 
-                    try { socket.send(JSON.stringify(request)); } catch (ex) { log(ex); }
+                    try {socket.send(JSON.stringify(request));} catch (ex) { log(ex); }
+
+                    //setTimeout('var response = {"msg_id": ' + request.msg_id + ', "code": "success"}; received(response);', 3000);
                 }
 
                 function login() {
                     var request = {"method": "POST", "resource": "/contact",
                         "email" : $("login_email").value,  "password" : $("login_password").value};
                     send(request, function(response) {
-                        if (response.code == "success") {
-                            show('activeForm');
+                        if (response.code=="success") {
+                            show('activeForm')
                             whoisonline();
                         } else {
-                            alert(response.code + ": " + response.reason);
+                            alert(response.code + ":" + response.reason);
                         }
+                        // do something
                     });
                 }
 
@@ -108,7 +133,7 @@
                         "firstname" : $("signup_firstname").value, "lastname" : $("signup_lastname").value};
                     send(request, function(response) {
                         if (response.code == "success") {
-                            show("loginForm");
+                            show('loginForm');
                             $("login_email").value = $("signup_email").value;
                             $("login_password").value = $("signup_password").value;
                         } else {
@@ -117,27 +142,29 @@
                     });
                 }
 
-                function whoisonline(members){
+                function whoisonline(){
                     var request = {"method": "GET", "resource": "/contact"};
                     send(request, function(response) {
-                        if (response.contact == '$member') {
-                            var members ="";
-                            for (var i in response.contact){
-                                var c = response.contact[i];
-                                members += "<b>" + c.email + "</b>: " + c.firstname + " " + c.lastname + "<br/>";
-                            }
-
-                            $("userlistBox").innerHTML+= members;
-                        } else {
-                            alert(response.code + ": " + response.reason);
-                        }
+                        if (response.code == "success") {
+                         var members =response.contact;}
+                     var data ="";
+                        for (var i in members){
+                            var c = members[i];
+                            data += "<b><a onclick='sendmsg();' href='#'>" + c.email + "</a></b>: " + c.firstname + " " + c.lastname + "<br/>";
+                    }
+                      $("userlistBox").innerHTML+= data;
+                      console.log(data);
                     });
                 }
+
                 function logout() {
                     var request = {"method": "DELETE", "resource": "/contact"};
                     send(request, function(response) {
                         if (response.code == "success") {
+                            $("userlistBox").innerHTML="";
                             show('loginForm');
+                            $("login_email").focus();
+
                         } else {
                             alert(response.code + ": " + response.reason);
                         }
@@ -146,15 +173,16 @@
 
                 // Utilities
                 function $(id){ return document.getElementById(id); }
-                function log(msg){ $("log").innerHTML+="<br>"+msg; }
+                function log(msg){ $("log").innerHTML+="\n"+msg; }
+           //     function log(msg){ $("log").innerHTML+="<br>"+msg; }
                 function onkey(event){ if(event.keyCode==13){ send(); } }
-            </script>
+        </script>
 
         </head>
-        <body onload="init()">
+        <body onload="init();">
             <h3>Voice and Video on Web</h3>
 
-            <div id="loginForm" style="position:absolute; left: 20px; top: 50px;">
+            <div id="loginForm" style="position:absolute; left: 20px; top: 50px; visibility: visible;">
             <table class="signup" border="0" cellpadding="2" cellspacing="5" bgcolor="#eeeeee">
                 <th colspan="2" align="center">Login</th>
                 <tr>
@@ -166,7 +194,7 @@
                     <td><input type="password" maxlength="20" id="login_password" /></td>
                 </tr>
                 <tr>
-                    <td align="center"><button onclick="if (validate('login')) { login(); }">Login</button></td>
+                    <td align="center"><button onclick="if (validate('login')) { login();}">Login</button></td>
                     <td align="center"><button onclick="show('signupForm')">New user?</button</td>
                 </tr>
             </table>
@@ -193,14 +221,14 @@
                 </tr>
                 <tr>
                     <td align="center"><button onclick="if (validate('signup')) { signup(); }">Sign up</button></td>
-                    <td align="center"><button onclick="show('loginForm')">Cancel</button></td>
+                    <td align="center"><button onclick="show('loginForm'); return false;">Cancel</button></td>
                 </tr>
             </table>
         </div>
 
         <div id="activeForm" style="position:absolute; left: 20px; top: 50px; visibility: hidden; background-color: #eeeeee; border: 1px solid #cfcfcf; width: 600px; height: 500px;">
             <div id="userlistBox" style="position:absolute; left: 5px; top: 10px; width: 290px;height: 400px; background-color: #ffffff; border: 1px solid #cfcfcf; padding: 5px 0px 0px 5px;">
-                <b>Members Online</b>
+
             </div>
             <textarea cols="" rows=""  id="historyBox" style="position:absolute; left: 305px; top: 10px; width: 290px; height: 400px;">Chat Area</textarea>
             <div id="logOut" style="position:absolute; left: 5px; top: 450px;">
@@ -210,7 +238,9 @@
 
 
         <div style="position:absolute; top:10px; left:700px; border: 1px solid #cfcfcf; width: 400px; height: 600px;">
-            <b>Trace</b><br/> <div id="log"></div>
+            <b>Trace</b><br/>
+      <!--      <div id="log"></div>    -->
+            <textarea cols="" rows=""  id="log" style="width: 398px; height: 580px"></textarea>
             <!--      <textarea id="log" style="top:15px; left:605px; border: 1px solid #cfcfcf; width: 380px; height: 580px;"></textarea> -->
         </div>
 
