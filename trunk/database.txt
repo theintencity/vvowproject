@@ -1,0 +1,29 @@
+mysql> desc user;
++-----------+-------------+------+-----+---------+-------+
+| Field     | Type        | Null | Key | Default | Extra |
++-----------+-------------+------+-----+---------+-------+
+| email     | varchar(50) | NO   | PRI |         |       |
+| password  | varchar(25) | YES  |     | NULL    |       |
+| firstname | varchar(25) | YES  |     | NULL    |       |
+| lastname  | varchar(25) | YES  |     | NULL    |       |
++-----------+-------------+------+-----+---------+-------+
+4 rows in set (0.08 sec)
+
+mysql> desc contact;
++-------+-------------+------+-----+---------+-------+
+| Field | Type        | Null | Key | Default | Extra |
++-------+-------------+------+-----+---------+-------+
+| wsid  | varchar(25) | NO   | PRI |         |       |
+| email | varchar(50) | NO   | PRI |         |       |
++-------+-------------+------+-----+---------+-------+
+2 rows in set (0.08 sec)
+
+mysql> desc resource;
++----------+--------------+------+-----+---------+-------+
+| Field    | Type         | Null | Key | Default | Extra |
++----------+--------------+------+-----+---------+-------+
+| resource | varchar(255) | NO   | PRI | NULL    |       |
+| json     | text         | YES  |     | NULL    |       |
++----------+--------------+------+-----+---------+-------+
+2 rows in set (0.08 sec)
+
