@@ -50,7 +50,7 @@
             var nearID = null;
             
             function init() {
-                var host = "ws://127.0.0.1:8080/socket/newsocket/server.php";
+                var host = "ws://64.131.109.97:8080/socket/newsocket/server.php";
                 try{
                     socket = new WebSocket(host);
                     console.log('websocket.init: status=' + socket.readyState);
@@ -181,6 +181,7 @@
                 send(request, function(response) {
                     if (response.code == "success") {
                         $("userlistBox").innerHTML = "";
+                        $('historyBox').value="";
                         show('loginForm');
                         $("login_email").focus();
 
@@ -313,8 +314,11 @@
                         getFlashMovie("video2").setProperty("src", request.inviteURL);
                         var url = "rtmfp://stratus.rtmfp.net/d1e1e5b3f17e90eb35d244fd-c711881365d9/"
                             + "?play=" + stream + "&farID=" + nearID;
-                        var response = {"method": "NOTIFY", "resource": "/contact",
+                      /*  var response = {"method": "NOTIFY", "resource": "/contact",
                                 "terminate": true, "rejectReason": "busy here"};
+                       */
+                        var response = {"method": "NOTIFY", "resource": "/contact", "email": target, "acceptURL": url};
+                        cosole.log(response);
                         send(response, function(response) { });
                     } else {
                         set_call_state(null);
