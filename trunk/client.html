@@ -26,36 +26,36 @@
 
             // the web socket to the server
             var socket;
-            
+
             // this sequence number is used to generate the next message id.
             var count = 1;
-            
+
             // pending REST request to the server, which are pending a response.
             // In this table: Key is the msg_id and value is the response callback function.
             var pending_request = {};
-            
+
             // the timeout in seconds, for retrying connection, with exponential back-off and limit of 1 minute
             var timeout = 125;
-            
+
             // the current target email with whom we are chatting with, if any?
             var target = null;
-            
+
             // the call state is "inviting", "received", "active" or "null"
             var call_state = null;
-            
+
             // local voice stream name
             var stream = null;
-            
+
             // local voice secure token
             var nearID = null;
-            
+
             function init() {
-                var host = "ws://64.131.109.97:8080/socket/newsocket/server.php";
+                var host = "ws://127.0.0.1:8080/socket/newsocket/server.php";
                 try{
                     socket = new WebSocket(host);
                     console.log('websocket.init: status=' + socket.readyState);
                     $('initForm').innerHTML = 'Connecting...';
-                    
+
                     socket.onopen    = function(msg){
                         console.log("websocket.onopen: status=" + this.readyState);
                         timeout = 125;
@@ -75,7 +75,7 @@
                     socket.onclose   = function(msg){
                         console.log("websocket.onclose: status=" + this.readyState+ ". reconnecting in " + timeout/1000.0+" seconds");
                         $('initForm').innerHTML = 'Connect failed. reconnecting in ' + timeout / 1000.0 + ' seconds. Refresh this page to connect now.';
-                        
+
                         setTimeout("init()", timeout);
                         if (timeout < 60000) {
                             timeout *= 2;
@@ -89,18 +89,18 @@
                 $("login_email").focus();
             }
 
-            function getQueryVariable(variable) { 
-                var query = window.location.search.substring(1); 
-                var vars = query.split("&"); 
-                for (var i=0;i<vars.length;i++) { 
-                    var pair = vars[i].split("="); 
-                    if (pair[0] == variable) { 
-                          return pair[1]; 
-                    } 
+            function getQueryVariable(variable) {
+                var query = window.location.search.substring(1);
+                var vars = query.split("&");
+                for (var i=0;i<vars.length;i++) {
+                    var pair = vars[i].split("=");
+                    if (pair[0] == variable) {
+                          return pair[1];
+                    }
                 }
                 return null;
             }
-            
+
             function validate(command) {
                 if (command == "login") {
                     fail = validateEmail($("login_email").value)
@@ -118,7 +118,7 @@
                     return false;
                 }
             }
-            
+
             // show one of loginForm, signupForm or activeForm
 
             function show(formname) {
@@ -138,7 +138,7 @@
                     response = response.substring(1);
                 }
                 response = JSON.parse(response);
-                
+
                 if (response.msg_id && pending_request[response.msg_id]) {
                     pending_request[response.msg_id](response);
                     delete pending_request[response.msg_id];
@@ -165,7 +165,7 @@
             function login() {
                 var request = {"method": "POST", "resource": "/contact",
                     "email" : $("login_email").value,  "password" : $("login_password").value};
-                    
+
                 send(request, function(response) {
                     if (response.code == "success") {
                         show('activeForm')
@@ -190,12 +190,12 @@
                     }
                 });
             }
-            
+
             function signup() {
                 var request = {"method": "POST", "resource": "/user",
                     "email" : $("signup_email").value,  "password" : $("signup_password").value,
                     "firstname" : $("signup_firstname").value, "lastname" : $("signup_lastname").value};
-                    
+
                 send(request, function(response) {
                     if (response.code == "success") {
                         show('loginForm');
@@ -217,7 +217,7 @@
                     }
                 });
             }
-            
+
             function update_members(members) {
                 var data = "";
                 console.log('members=' + members);
@@ -230,7 +230,7 @@
                 console.log('setting userlistBox to ' + data);
                 $("userlistBox").innerHTML = data;
             }
-            
+
             function sendmsg() {
                 var msg = $('chatInput').value;
                 $('chatInput').value = "";
@@ -245,7 +245,7 @@
                     }
                 });
             }
-            
+
             function received_notify(request) {
                 if (request.text) {
                     writeHistory(request.from_email + ': ' + request.text);
@@ -259,23 +259,23 @@
                     update_members(request.contact);
                 }
             }
-            
+
             function writeHistory(msg) {
                 $('historyBox').value += msg + "\n";
             }
-            
+
             function set_call_state(state) {
                 call_state = state;
                 $("hangupButton").style.visibility = call_state != null ? "visible" : "hidden";
             }
-            
+
             function invite(email) {
                 if (call_state == null && nearID != null) {
                     set_call_state("inviting");
                     target = email;
                     writeHistory("Inviting " + email + " to a voice call");
                     $("textChatTitle").innerHTML = "Text chat with " + email;
-                    
+
                     var url = "rtmfp://stratus.rtmfp.net/d1e1e5b3f17e90eb35d244fd-c711881365d9/"
                         + "?play=" + stream + "&farID=" + nearID;
                     var request = {"method": "NOTIFY", "resource": "/contact", "email": target,
@@ -295,7 +295,7 @@
                     writeHistory('failed to invite as you are already in an active or pending call');
                 }
             }
-            
+
             function received_invite(request) {
                 if (call_state != null) {
                     writeHistory('missed call from ' + request.from_email);
@@ -310,7 +310,7 @@
                         writeHistory('accepting call from ' + request.from_email);
                         $("textChatTitle").innerHTML = "Text chat with " + target;
                         set_call_state("active");
-                        
+
                         getFlashMovie("video2").setProperty("src", request.inviteURL);
                         var url = "rtmfp://stratus.rtmfp.net/d1e1e5b3f17e90eb35d244fd-c711881365d9/"
                             + "?play=" + stream + "&farID=" + nearID;
@@ -329,7 +329,7 @@
                     }
                 }
             }
-            
+
             function received_accept(request) {
                 if (call_state == 'inviting') {
                     set_call_state("active");
@@ -337,37 +337,37 @@
                     getFlashMovie("video2").setProperty("src", request.acceptURL);
                 }
             }
-            
+
             function hangup() {
                 if (call_state != null) {
                     set_call_state(null);
                     getFlashMovie("video2").setProperty("src", null);
-                    
+
                     writeHistory("call terminating");
-                    
+
                     var request = {"method": "NOTIFY", "resource": "/contact",
                                 "email": target, "terminate": true};
                     send(request, function(response) { });
                 }
             }
-            
+
             function received_hangup(request) {
                 if (call_state != null) {
                     set_call_state(null);
                     getFlashMovie("video2").setProperty("src", null);
-                    
+
                     writeHistory("call terminated" + (request.rejectReason ? ": " + request.rejectReason : ""));
                 }
             }
-            
+
             // start the local VideoIO and get the secure token (nearID)
             function start_local_audio() {
                 stream = "vow" + Math.random();
                 var url = "rtmfp://stratus.rtmfp.net/d1e1e5b3f17e90eb35d244fd-c711881365d9/"
-                        + "?publish=" + stream; 
+                        + "?publish=" + stream;
                 getFlashMovie("video1").setProperty("src", url);
             }
-            
+
             // Utilities
             function $(id){ return document.getElementById(id); }
             function log(msg){ $("log").innerHTML += "\n" + msg; }
@@ -381,7 +381,7 @@
         <div id="initForm" style="position:absolute; left: 20px; top: 50px; visibility: visible;">
             Please wait file it is connecting to the server!
         </div>
-        
+
         <div id="loginForm" style="position:absolute; left: 20px; top: 50px; visibility: hidden;">
             <table class="signup" border="0" cellpadding="2" cellspacing="5" bgcolor="#eeeeee">
                 <th colspan="2" align="center">Login</th>
@@ -430,33 +430,33 @@
             <div style="position:absolute; left: 5px; top: 5px;">Online users</div>
             <div id="userlistBox" style="position:absolute; left: 5px; top: 30px; width: 190px;height: 400px; background-color: #ffffff; border: 1px solid #cfcfcf; padding: 5px 0px 0px 5px;">
             </div>
-            
+
             <div id="textChatTitle" style="position:absolute; left: 205px; top: 175px;">
                 Text chat
             </div>
             <textarea cols="" rows=""  id="historyBox" readonly="readonly" style="position:absolute; left: 205px; top: 195px; width: 450px; height: 205px;"></textarea>
-            
+
             <input id="chatInput" type="text" value="Type your message here" onkeypress="onkey(event);"
                     style="position:absolute; left: 205px; top: 405px; width: 450px; height: 30px;"/>
-            
-            
+
+
             <div id="voiceCallTitle" style="position:absolute; left: 205px; top: 5px;">
                 Voice call
                 <button id="hangupButton" style="visibility: hidden;" onclick="hangup()">hang up</button>
             </div>
-            
+
             <div style="position:absolute; left: 205px; top: 30px; width: 450px; height: 140px; background-color: #ffffff; border: 1px solid #cfcfcf;">
                 <script type="text/javascript">
                     var nearID = null;
-                    
+
                     function getFlashMovie(movieName) {
                         var isIE = navigator.appName.indexOf("Microsoft") != -1;
-                        return (isIE) ? window[movieName] : document[movieName];  
+                        return (isIE) ? window[movieName] : document[movieName];
                     }
-                     
+
                     function onCreationComplete(event) {
                     }
-                     
+
                     function onPropertyChange(event) {
                         if (event.property == "nearID") {
                             if (event.objectID == "video1") {
@@ -502,7 +502,7 @@
                     </embed>
                 </object>
             </div>
-            
+
             <div id="logOut" style="position:absolute; left: 5px; top: 450px;">
                 <button onclick="logout();">Logout</button>
             </div>

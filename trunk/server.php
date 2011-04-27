@@ -10,15 +10,15 @@ error_reporting(E_ALL);
 set_time_limit(0);
 ob_implicit_flush();
 
-$master = WebSocket("64.131.109.97", 8080);
+$master = WebSocket("127.0.0.1", 8080);
 $sockets = array($master);
 $users = array();
 $debug = true;
 
-$db_hostname = '64.131.109.97';
-$db_database = 'vowproject';
-$db_username = 'vowuser';
-$db_password = 'vowWebrtc';
+$db_hostname = 'localhost';
+$db_database = 'xxxproject';
+$db_username = 'xxxuser';
+$db_password = 'xxxpass';
 
 //-----------------------------------------------
 // Main: connect database, start websocket server
@@ -71,12 +71,12 @@ function connect_db() {
         return NULL;
     }
     mysql_select_db($db_database, $db_server);
-    
+
     // cleanup the contact and subscribe table, since there are no
     // connected contact on startup
     mysql_query("DELETE FROM contact");
     mysql_query("DELETE FROM subscribe");
-    
+
     return $db_server;
 }
 
@@ -204,12 +204,12 @@ function do_logout($user) {
                             mysql_real_escape_string($wsid)));
     mysql_query(sprintf("DELETE FROM subscribe WHERE wsid='%s'",
                             mysql_real_escape_string($wsid)));
-    
+
     $new_request = do_whoisonline($user);
     unset($new_request['code']);
     $new_request['email'] = '*';
     do_notify($new_request, $user);
-    
+
     return array('code' =>'success');
 }
 
@@ -273,17 +273,17 @@ function do_notify($request, $user) {
         // get all targets by email
         $targets = get_users_by_email($request["email"]);
     }
-    
+
     $new_request = $request;
     unset($new_request["msg_id"]);
-    
+
     $new_request["from_email"] = get_email_by_wsid($user->id);
     $new_request["from_wsid"] = $user->id;
     $new_request["method"] = "NOTIFY";
     $new_request["resource"] = "/contact";
-    
+
     $param = json_encode($new_request);
-    
+
     $sent_count = 0;
     say("found targets " . $targets);
     foreach ($targets as $target) {
@@ -297,7 +297,7 @@ function do_notify($request, $user) {
         say('notify could not send to anyone: ' . $new_request);
         return array('code' => 'failed', 'reason' => 'no available user to send notification to\n');
     }
-    
+
     say('notify sent to ' . count($sent_count) . ' items: ' . $new_request);
     return array('code' => 'success', 'sent_count' => $sent_count);
 }
@@ -313,9 +313,9 @@ function do_post_resource($request, $user, $resource) {
     if (!$result) {
         return array('code' => 'failed', 'reason' => 'failed to insert this resource');
     }
-    
+
     notify_subscribers($resource, $user);
-    
+
     return array('code' => 'success');
 }
 
@@ -326,9 +326,9 @@ function do_put_resource($request, $user, $resource) {
     if (!$result) {
         return array('code' => 'failed', 'reason' => 'failed to replace this resource');
     }
-    
+
     notify_subscribers($resource, $user);
-    
+
     return array('code' => 'success');
 }
 
@@ -354,9 +354,9 @@ function do_delete_resource($request, $user, $resource) {
     if (!$result) {
         return array('code' => 'failed', 'reason' => 'failed to delete this resource');
     }
-    
+
     notify_subscribers($resource, $user);
-    
+
     return array('code' => 'success');
 }
 
@@ -366,7 +366,7 @@ function do_subscribe_resource($request, $user, $resource) {
     if (!$result) {
         return array('code' => 'failed', 'reason' => 'failed to subscribe the user to the resource');
     }
-    
+
     return array('code' => 'success');
 }
 
@@ -393,14 +393,14 @@ function notify_subscribers($resource, $user, $request=NULL) {
             $request = json_encode($row[0]);
         }
     }
-    
+
     $request["from_email"] = get_email_by_wsid($user->id);
     $request["from_wsid"] = $user->id;
     $request["method"] = "NOTIFY";
     $request["resource"] = $resource;
-    
+
     $param = json_encode($request);
-    
+
     $result = mysql_query(sprintf("SELECT subscriber_wsid FROM subscribe WHERE resource='%s'",
                         mysql_real_escape_string($resource)));
     $result_count = mysql_num_rows($result);
@@ -410,14 +410,14 @@ function notify_subscribers($resource, $user, $request=NULL) {
         $found = getuserbyid($row[0]);
         array_push($targets, $found);
     }
-    
+
     $sent_count = 0;
     foreach ($targets as $target) {
         send($target->socket, $param);
         ++$sent_count;
     }
     return $sent_count;
-} 
+}
 
 function get_resource_from_request($request) {
     $value = $request;
