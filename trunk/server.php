@@ -10,7 +10,7 @@ error_reporting(E_ALL);
 set_time_limit(0);
 ob_implicit_flush();
 
-$master = WebSocket("127.0.0.1", 8080);
+$master = WebSocket("64.131.109.97", 8080);
 $sockets = array($master);
 $users = array();
 $debug = true;
@@ -295,7 +295,7 @@ function do_notify($request, $user) {
 
     if ($sent_count == 0) {
         say('notify could not send to anyone: ' . $new_request);
-        return array('code' => 'failed', 'reason' => 'no available user to send notification to');
+        return array('code' => 'failed', 'reason' => 'no available user to send notification to\n');
     }
     
     say('notify sent to ' . count($sent_count) . ' items: ' . $new_request);

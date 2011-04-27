@@ -318,7 +318,7 @@
                                 "terminate": true, "rejectReason": "busy here"};
                        */
                         var response = {"method": "NOTIFY", "resource": "/contact", "email": target, "acceptURL": url};
-                        cosole.log(response);
+                        console.log(response);
                         send(response, function(response) { });
                     } else {
                         set_call_state(null);
@@ -434,7 +434,7 @@
             <div id="textChatTitle" style="position:absolute; left: 205px; top: 175px;">
                 Text chat
             </div>
-            <textarea cols="" rows=""  id="historyBox" style="position:absolute; left: 205px; top: 195px; width: 390px; height: 205px;"></textarea>
+            <textarea cols="" rows=""  id="historyBox" readonly="readonly" style="position:absolute; left: 205px; top: 195px; width: 390px; height: 205px;"></textarea>
             
             <input id="chatInput" type="text" value="Type your message here" onkeypress="onkey(event);"
                     style="position:absolute; left: 205px; top: 405px; width: 390px; height: 30px;"/>
@@ -464,7 +464,7 @@
                             }
                         } else if (event.property == "camera") {
                             if (event.newValue) {
-                                getFlashMovie("video1").setProperty("camera", false);
+        //                        getFlashMovie("video1").setProperty("camera", false);
                             }
                         }
                     }
