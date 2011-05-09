@@ -23,6 +23,11 @@ function onPropertyChange(event) {
     }
 }
 
+function log(msg) {
+    if (typeof console != 'undefined')
+        console.log(msg);
+}
+
 var presentation = {
     // the room id we are connected to. Default is "public"
     room: null,
@@ -66,16 +71,16 @@ var presentation = {
     
     init: function() {
         this.room = this.get_query_param('room', 'public');
-        console.log('room=' + this.room);
+        log('room=' + this.room);
         
         try{
             this.socket = new WebSocket(this.websocket_url);
-            console.log('websocket.init: status=' + this.socket.readyState);
+            log('websocket.init: status=' + this.socket.readyState);
             presentation.info('connecting...');
             presentation.set_cursor('wait');
             
             this.socket.onopen = function(msg){
-                console.log("websocket.onopen: status=" + this.readyState);
+                log("websocket.onopen: status=" + this.readyState);
                 timeout = 125;
                 presentation.info('connected to websocket server');
                 presentation.set_cursor('auto');
@@ -86,11 +91,11 @@ var presentation = {
                 var data = msg.data.replace(/\\\//g, '/');
                 if (data.charAt(0) == '\u0000')
                     data = data.substring(1);
-                console.log("received: " + data);
+                log("received: " + data);
                 presentation.websocket_received(data);
             };
             this.socket.onclose   = function(msg){
-                console.log("websocket.onclose: status=" + this.readyState+ ". reconnecting in " + presentation.timeout/1000.0+" seconds");
+                log("websocket.onclose: status=" + this.readyState+ ". reconnecting in " + presentation.timeout/1000.0+" seconds");
                 presentation.info('Failed, reconnecting in ' + presentation.timeout / 1000.0 + ' seconds.'
                              + (presentation.timeout < 10000 ? "" :
                                 ' Reload page to connect now.'));
@@ -104,7 +109,8 @@ var presentation = {
             };
         }
         catch(ex){
-            console.log(ex);
+            log(ex);
+            presentation.warn("No websocket found. Please use the Google Chrome web browser. Your this browser does not support the Websocket protocol.")
         }
     
         $('inputText').focus();
@@ -481,7 +487,7 @@ var presentation = {
         var now = (new Date()).getTime();
         if ((now - presentation.last_mouse_move) > 200) { // up to 5 events per second
             presentation.last_mouse_move = now;
-            console.log('on-mouse-move');
+            log('on-mouse-move');
             presentation.websocket_send({"method": "NOTIFY", "resource": "/room/" + presentation.room + "/presenter",
                 "data": {"mouse": presentation.get_mouse_pos(evt)}});
         }
@@ -493,7 +499,7 @@ var presentation = {
     },
     
     on_presenter_mouse_move: function(request) {
-        //console.log('presenter mouse ' + request.data.mouse.x + "," + request.data.mouse.y)
+        //log('presenter mouse ' + request.data.mouse.x + "," + request.data.mouse.y)
         this.show_presenter_mouse(request.data.mouse);
     },
     
@@ -641,8 +647,8 @@ var presentation = {
     },
     
     on_web_page_change: function() {
-        console.log('on-webpage-change');
-        console.log($('webpage').contentDocument.location.href);
+        log('on-webpage-change');
+        log($('webpage').contentDocument.location.href);
     },
     
     //-------------------------------------------
@@ -706,7 +712,7 @@ var presentation = {
 
         try {
             var value = JSON.stringify(request);
-            console.log('Sending: ' + value);
+            log('Sending: ' + value);
             this.socket.send(value);
         } catch (ex) {
             console.log(ex);
