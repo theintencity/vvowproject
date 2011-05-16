@@ -472,6 +472,7 @@ var presentation = {
                                 + '<param name="bgcolor" value="#ffffff" />'
                                 + '<param name="allowFullScreen" value="true" />'
                                 + '<param name="allowScriptAccess" value="always" />'
+                                + '<param name="wmode" value="opaque" />'
                                 + '</object>';
         }
     },
