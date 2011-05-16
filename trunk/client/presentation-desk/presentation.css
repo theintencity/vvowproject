@@ -39,6 +39,8 @@
     bottom: 2px;
     min-width: 165px;
     border: 1px solid grey;
+    background-color: #efefef;
+    background: -webkit-gradient(linear, left top, left bottom, from(#efefef), to(#808080));
     overflow: hidden;
 }
 #presenter_video {
@@ -69,6 +71,8 @@
     top: 234px;
     bottom: 2px;
     border: 1px solid grey;
+    background-color: #efefef;
+    background: -webkit-gradient(linear, left top, left bottom, from(#efefef), to(#808080));
     overflow: auto;
     padding: 2px;
     font-size: 14px;
