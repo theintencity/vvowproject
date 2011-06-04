@@ -1,0 +1,299 @@
+body {
+  margin: 0;
+  padding: 10px;
+  font-family: sans-serif;
+  font-size: 14px;
+  color: #404040;
+}
+
+span.copyright {
+  float: right;
+  color: #808080;
+  font-size: 11px;
+}
+span.copyright a {
+  color: #808080;
+  text-decoration: none;
+}
+
+span.footer {
+  color: #808080; 
+  font-size: 11px; 
+  padding-left: 10px;
+}
+span.footer a {
+  color: #808080;
+  text-decoration: none;
+}
+input.button {
+  border: 1px outset #a0a0a0;
+  cursor: pointer;
+}
+
+.has-shadow {
+  border: 1px solid #a0a0a0;
+  -moz-box-shadow: 3px 3px 10px #808080;
+  -webkit-box-shadow: 3px 3px 10px #808080;
+  box-shadow: 3px 3px 10px #808080;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Shadow(Strength=4, Direction=135, Color='#808080')";
+  filter: progid:DXImageTransform.Microsoft.Shadow(Strength=4, Direction=135, Color='#808080');
+}
+.has-gradient {
+  background: -moz-linear-gradient(100% 100% 90deg, #f0f0f0, #e0e0e0);
+  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#f0f0f0), to(#e0e0e0));
+  background: -webkit-linear-gradient(#f0f0f0, #e0e0e0);
+  background: -o-linear-gradient(#f0f0f0, #e0e0e0);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#f0f0f0', endColorstr='#e0e0e0');
+}
+.heading {
+  font-weight: bold;
+  font-size: 14px;
+}
+#div-header {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 10px;
+  height: 47px;
+}
+#div-header div {
+  border: none;
+  background: #e0e0e0;
+  height: 19px;
+  padding: 4px;
+}
+#div-footer {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  height: 50px;
+}
+#div-footer div {
+  border: none;
+  background: #e0e0e0;
+  height: 19px;
+  padding: 4px;
+}
+div#div-connecting {
+  position: absolute;
+  top: 100px;
+  left: 100px;
+  right: 100px;
+  bottom: 100px;
+  background-color: #f0f0f0;
+  border: 1px solid #a0a0a0;
+  text-align: center;
+  color: #ff0000;
+  font-size: 16px;
+  padding: 20px;
+  opacity: 0.8;
+  z-index: 100;
+}
+
+#div-main {
+  position: absolute;
+  top: 60px;
+  bottom: 60px;
+  left: 10px;
+  right: 10px;
+  padding-top: 10px;
+}
+ol.toc {
+  height: em;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+ol.toc li {
+  float: left;
+  cursor: pointer;
+  margin: 0 1px 0 0;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 10px;
+  padding-right: 10px;
+  border: 1px solid #c0c0c0;
+  background-color: #f0f0f0;
+  background: -moz-linear-gradient(100% 100% 90deg, #d0d0d0, #b0b0b0);
+  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#d0d0d0), to(#b0b0b0));
+  background: -webkit-linear-gradient(#d0d0d0, #b0b0b0);
+  background: -o-linear-gradient(#d0d0d0, #b0b0b0);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#d0d0d0', endColorstr='#b0b0b0');
+}
+ol.toc li.current {
+  cursor: default;
+  border: 1px solid #c0c0c0;
+  background-color: #d0d0d0;
+  background: -moz-linear-gradient(100% 100% 90deg, #f0f0f0, #e0e0e0);
+  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#f0f0f0), to(#e0e0e0));
+  background: -webkit-linear-gradient(#f0f0f0, #e0e0e0);
+  background: -o-linear-gradient(#f0f0f0, #e0e0e0);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#f0f0f0', endColorstr='#e0e0e0');
+}
+div.content {
+  position: absolute;
+  border: 1px solid #a0a0a0;
+  top: 32px;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
+  clear: left;
+  padding: 10px;
+  background-color: #a8a8a8;
+}
+div.content-box {
+  background-color: #f0f0f0;
+  border: 1px solid #a0a0a0;
+  padding 4px;
+}
+div.content-header {
+  padding-left: 4px;
+  padding-right: 4px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  border: 1px solid #c0c0c0;
+  background-color: #f0f0f0;
+  background: -moz-linear-gradient(100% 100% 90deg, #d0d0d0, #b0b0b0);
+  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#d0d0d0), to(#b0b0b0));
+  background: -webkit-linear-gradient(#d0d0d0, #b0b0b0);
+  background: -o-linear-gradient(#d0d0d0, #b0b0b0);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#d0d0d0', endColorstr='#b0b0b0');
+}
+div#user-list-box {
+  position: absolute;
+  top: 10px;
+  height: 190px;
+  left: 10px;
+  width: 200px; 
+}
+div#user-list-box {
+  position: absolute;
+  top: 10px;
+  height: 190px;
+  left: 10px;
+  width: 200px; 
+}
+div#text-chat-box {
+  position: absolute;
+  top: 210px;
+  bottom: 10px;
+  left: 10px;
+  width: 200px; 
+}
+div#join-conf-box {
+  position: absolute;
+  top: 20px;
+  height: 150px;
+  left: 20px;
+  width: 300px;
+  /* border: 1px solid #a0a0a0;*/
+}
+div#create-conf-box {
+  position: absolute;
+  top: 190px;
+  height: 170px;
+  left: 20px;
+  width: 300px;
+  /* border: 1px solid #a0a0a0;*/
+}
+div#chat-history {
+  position: absolute;
+  top: 22px;
+  bottom: 24px;
+  left: 0px;
+  right: 0px;
+  padding-left: 2px;
+  padding-right: 2px;
+  overflow: auto;
+}
+div#chat-input {
+  position: absolute;
+  bottom: 4px;
+  left: 2px;
+  right: 2px;
+  height: 20px;
+}
+div#videos-box {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  right: 10px;
+  left: 220px;
+  border: 1px solid #a8a8a8;
+}
+div.video {
+  position: absolute;
+  background-color: #000000;
+}
+ul.participants {
+  height: em;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+}
+ul.participants li {
+  clear: left;
+  padding-left: 4px;
+  padding-right: 4px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  margin: 0;
+  border-bottom: 1px solid #c0c0c0;
+  color: #808080;
+}
+
+img.hand-icon {
+  float: right;
+  cursor: pointer;
+}
+
+img.document-icon {
+  float: right;
+  cursor: pointer;
+}
+
+button.closebutton {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 1000;
+  width: 20px;
+  height: 20px;
+  padding: 0px;
+  cursor: pointer;
+  background-color: #ffffff;
+}
+button.prevbutton {
+  position: absolute;
+  bottom: 2px;
+  right: 31px;
+  z-index: 1000;
+  width: 30px;
+  height: 20px;
+  padding: 0px;
+  cursor: pointer;
+  background-color: #ffffff;
+}
+button.nextbutton {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  z-index: 1000;
+  width: 30px;
+  height: 20px;
+  padding: 0px;
+  cursor: pointer;
+  background-color: #ffffff;
+}
+
+div.mouse {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: 2px solid green;
+    background-color: #ff0000; 
+    z-index: 500;
+}
+
