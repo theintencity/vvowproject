@@ -52,7 +52,7 @@ while (true) {
                 if (!$user->handshake) {
                     dohandshake($user, $buffer);
                 } else {
-                    process($user, $buffer);
+                    process_multiple($user, $buffer);
                 }
             }
         }
@@ -86,6 +86,29 @@ function disconnect_db() {
 //-----------------------------------------------
 // Our websocket data processing
 //-----------------------------------------------
+
+$pending_msg = "";
+
+function process_multiple($user, $msg) {
+    global $pending_msg;
+    
+    $pending_msg = $pending_msg . $msg;
+    if ($pending_msg[strlen($pending_msg)-1] != chr(255)) {
+        say("ERROR: incomplete message.");
+        return;
+    }
+    
+    $msg = $pending_msg;
+    $pending_msg = "";
+    
+    $first = 0;
+    $last = 0;
+    while ($last < (strlen($msg))) {
+        $first = strpos($msg, chr(0), $last);
+        $last = strpos($msg, chr(255), $first) + 1;
+        process($user, substr($msg, $first, $last-$first));
+    }
+}
 
 function process($user, $msg) {
     $action = unwrap($msg);
@@ -128,7 +151,7 @@ function process($user, $msg) {
     }
 
     $response['msg_id'] = $request['msg_id'];
-    header("Content-type: application/json");
+    //header("Content-type: application/json");
     send($user->socket, json_encode($response));
 }
 
@@ -460,14 +483,15 @@ function disconnect($socket) {
         array_splice($users, $found, 1);
     }
     $index = array_search($socket, $sockets);
-    socket_close($socket);
-    console($socket . " DISCONNECTED!");
     if ($index >= 0) {
         array_splice($sockets, $index, 1);
     }
+    socket_close($socket);
+    console($socket . " DISCONNECTED!");
 }
 
 function dohandshake($user, $buffer) {
+    global $sockets;
     console("\nRequesting handshake...");
     console($buffer);
     list($resource, $host, $origin, $strkey1, $strkey2, $data) = getheaders($buffer);
@@ -483,7 +507,11 @@ function dohandshake($user, $buffer) {
     $spaces1 = strlen(preg_replace($pattern, $replacement, $strkey1));
     $spaces2 = strlen(preg_replace($pattern, $replacement, $strkey2));
 
-    if ($spaces1 == 0 || $spaces2 == 0 || $numkey1 % $spaces1 != 0 || $numkey2 % $spaces2 != 0) {
+    if ($spaces1 == 0 || $spaces2 == 0 || fmod($numkey1 % $spaces1) != 0 || fmod($numkey2 % $spaces2) != 0) {
+        $index = array_search($user->socket, $sockets);
+        if ($index >= 0) {
+            array_splice($sockets, $index, 1);
+        }
         socket_close($user->socket);
         console('failed');
         return false;
