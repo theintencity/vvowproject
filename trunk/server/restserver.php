@@ -507,7 +507,7 @@ function dohandshake($user, $buffer) {
     $spaces1 = strlen(preg_replace($pattern, $replacement, $strkey1));
     $spaces2 = strlen(preg_replace($pattern, $replacement, $strkey2));
 
-    if ($spaces1 == 0 || $spaces2 == 0 || fmod($numkey1 % $spaces1) != 0 || fmod($numkey2 % $spaces2) != 0) {
+    if ($spaces1 == 0 || $spaces2 == 0 || fmod($numkey1, $spaces1) != 0 || fmod($numkey2, $spaces2) != 0) {
         $index = array_search($user->socket, $sockets);
         if ($index >= 0) {
             array_splice($sockets, $index, 1);
