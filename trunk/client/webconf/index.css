@@ -197,6 +197,18 @@ div#create-conf-box {
   width: 300px;
   /* border: 1px solid #a0a0a0;*/
 }
+div#login-only-box {
+  position: absolute;
+  top: 20px;
+  left: 340px;
+  height: 80px;
+  width: 270px;
+}
+div#min-requirements {
+  position: absolute;
+  left: 340px;
+  top: 10px;
+}
 div#chat-history {
   position: absolute;
   top: 22px;
@@ -244,12 +256,7 @@ ul.participants li {
   color: #808080;
 }
 
-img.hand-icon {
-  float: right;
-  cursor: pointer;
-}
-
-img.document-icon {
+img.button-icon {
   float: right;
   cursor: pointer;
 }
