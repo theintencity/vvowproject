@@ -9,11 +9,7 @@ var room = {
     room_id: null,
     
     // preferences for this room -- initialized to defaults
-    preferences: {
-        "name": null, "password": null, "owner": null,
-        "persistent": false, "video_auto": false, "allow_html": false,
-        "show_header": true, "show_footer": true
-    },
+    preferences: null,
     
     // whether this user is the moderator of this room?
     is_moderator: false,
@@ -64,6 +60,7 @@ var room = {
     
     on_open: function(data) {
         room.get_roomlist(function(rooms) {
+            rooms.sort(function(a, b) {return a.name < b.name ? -1 : (a.name > b.name ? 1 : 0);});
             $("join_room").innerHTML = "";
             for (var i=0; i<rooms.length; ++i) {
                 var r = rooms[i];
@@ -106,6 +103,8 @@ var room = {
     //-------------------------------------------
     
     init: function() {
+        this.preferences = this.get_default_preferences();
+        
         //room.user_list_init();
         //room.user_videos_init();
         window.onresize = room.resize_handler;
@@ -175,9 +174,11 @@ var room = {
                         room.logout();
                         room.user_name = user_name;
                         room.room_id = room_id;
-                        room.is_moderator = (user_password && response.entity.password == user_password);
-                        if (!room.is_moderator)
+                        room.is_moderator = response.entity.password == null || (user_password && response.entity.password == user_password);
+                        if (!room.is_moderator) {
                             $("document-icon").style.visibility = "hidden";
+                            //$("add-icon").style.visibility = "hidden";
+                        }
                         room.set_preferences(response.entity);
                         room.on_select_tab("conference");
                         room.login();
@@ -186,6 +187,10 @@ var room = {
                     room.main_error("This conference \"" + room_name + "\" does not exist");
                 }
             });
+    },
+    
+    login_only: function(user_name) {
+        
     },
     
     login: function() {
@@ -206,9 +211,7 @@ var room = {
         this.user_name = null;
       }
       $("chat-history").innerHTML = "";
-      this.set_preferences({"name": null, "password": null, "owner": null,
-                           "allow_html": false, "video_auto": false, "persistent": false,
-                           "show_header": true, "show_footer": true});
+      this.set_preferences(this.get_default_preferences());
     },
     
     get_roomlist: function(callback) {
@@ -246,6 +249,12 @@ var room = {
         restserver.send({"method": "SUBSCRIBE", "resource": "/webconf/" + this.room_id});
     },
     
+    get_default_preferences: function() {
+        return {"name": null, "password": null, "owner": null,
+                "allow_html": false, "video_auto": false, "persistent": false,
+                "show_header": true, "show_footer": true, "video_controls": false};  
+    },
+    
     delete_conference: function() {
         this.error("This conference is deleted");
         var old = this.userlist;
@@ -259,14 +268,16 @@ var room = {
     set_preferences: function(data) {
         var old = this.preferences;
         this.preferences = data;
+        var has_password = (this.preferences.password != null);
         
-        var fields = ["persistent", "video_auto", "allow_html", "show_header", "show_footer"];
-        for (var i=0; i<fields.length; ++i) {
-            var field = fields[i];
-            $("change_" + field).checked = this.preferences[field];
-            $("change_" + field).disabled = !this.is_moderator;
+        for (var s in this.preferences) {
+            if (typeof this.preferences[s] != "function" && s != "name" && s != "owner" && s != "password") {
+                $("change_" + s).checked = this.preferences[s];
+                $("change_" + s).disabled = !has_password || !this.is_moderator;
+            }
         }
-        $("save-conference-settings").disabled = !this.is_moderator;
+        $("save-conference-settings").disabled = !has_password || !this.is_moderator;
+        $("save-moderator-password").disabled = !has_password;
         
         if (old.show_header && !data.show_header) {
             $("div-header").style.visibility = "hidden";
@@ -292,9 +303,22 @@ var room = {
         } else if (!old.persistent && data.persistent) {
             this.info("Text chat messages are persistent now");
         }
+        if (old.video_controls && !data.video_controls) {
+            this.info("Removed participant video controls");
+        } else if (!old.video_controls && data.video_controls) {
+            this.info("Added participant video controls");
+        }
+        if (old.video_controls && !data.video_controls || !old.video_controls && data.video_controls) {
+            for (var s=0; s<this.userlist.length; ++s) {
+                var user = this.userlist[s];
+                if (user.video && $("user-video-" + user.id)) {
+                    getFlashMovie("video-" + user.id).setProperty("controls", data.video_controls);
+                }
+            }
+        }
     },
     
-    change_conference_settings: function(persistent, video_auto, allow_html, show_header, show_footer) {
+    change_conference_settings: function(persistent, video_auto, allow_html, show_header, show_footer, video_controls) {
         if (this.is_moderator) {
             var data = {};
             for (var s in this.preferences) {
@@ -302,6 +326,7 @@ var room = {
             }
             data.persistent = persistent;
             data.video_auto = video_auto;
+            data.video_controls = video_controls;
             data.allow_html = allow_html;
             data.show_header = show_header;
             data.show_footer = show_footer;
@@ -415,6 +440,21 @@ var room = {
                     room.info('failed to send your message ' + response.reason);
                 }
             });
+    },
+    
+    clear_chathistory: function() {
+        $("chat-history").innerHTML = "";
+        if (this.is_moderator) {
+            restserver.send({"method": "GET", "resource": "/webconf/" + this.room_id + "/chathistory"},
+                function(response) {
+                    if (response.code == "success") {
+                        for (var i=0; i<response.entity.length; ++i) {
+                            var id = response.entity[i];
+                            restserver.send({"method": "DELETE", "resource": "/webconf/" + room.room_id + "/chathistory/" + id});
+                        }
+                    }
+                });
+        }
     },
     
     //-------------------------------------------
@@ -633,25 +673,12 @@ var room = {
         };
         $("videos-box").appendChild(child);
         
-        child.innerHTML = 
-          '<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"\n\
-            id="video-' + user_id + '" width="100%" height="100%"\n\
-            codebase="http://fpdownload.macromedia.com/get/flashplayer/current/swflash.cab">\n\
-            <param name="movie" value="VideoIO45.swf" />\n\
-            <param name="quality" value="high" />\n\
-            <param name="bgcolor" value="#000000" />\n\
-            <param name="flashVars" value="cameraQuality=80&controls=true" />\n\
-            <param name="allowFullScreen" value="true" />\n\
-            <param name="allowScriptAccess" value="always" />\n\
-            <embed src="VideoIO45.swf" quality="high" bgcolor="#000000"\n\
-                width="100%" height="100%" name="video-' + user_id + '" align="middle"\n\
-                play="true" loop="false" quality="high"\n\
-                flashVars="cameraQuality=80&controls=true"\n\
-                allowFullScreen="true" allowScriptAccess="always"\n\
-                type="application/x-shockwave-flash"\n\
-                pluginspage="http://www.adobe.com/go/getflashplayer">\n\
-            </embed>\n\
-          </object>';
+        var flashVars = 'cameraQuality=80' + (this.preferences.video_controls ? '&controls=true' : '');
+        if (VideoIO) {
+            child.innerHTML = getVideoIO("video-" + user_id, flashVars);
+        } else {
+            child.innerHTML = '<span style="color: #ffffff;">You need Flash Player 10.0 or higher for this content</span>';
+        }
     },
 
     remove_video: function(user_id) {

@@ -45,7 +45,7 @@ The main view has many tabs: main, conference, preferences, help.
 	<li id="li-help" onclick="room.on_select_tab('help')">Help</li>
   </ol>
 
-  <div id="div-first" class="content has-shadow" style="visibility: visible;">
+  <div id="div-first" class="content has-shadow" style="visibility: visible; overflow: auto;">
     <div id="join-conf-box" class="content-box">
       <div class="content-header">Join Existing Web Conference</div>
       <table>
@@ -87,7 +87,21 @@ The main view has many tabs: main, conference, preferences, help.
       </table>
     </div>
 		
-		<div style="position: absolute; left: 350px; top: 10px;">
+		<!--
+    <div id="login-only-box" class="content-box">
+      <div class="content-header">Login to Receive Conference Invitation</div>
+      <table>
+        <tr><td align="right">Your full name:</td><td>
+          <input type="text" id="login_name"/>
+        </td></tr><tr><td colspan="2" align="center">
+          <input id="login-button" type="button" value="Login" class="button"
+				    onclick="room.login_only(sanitize($('login_name').value))"></input>
+        </td></tr>
+      </table>
+    </div>
+		-->
+		
+		<div id="min-requirements">
 				<h3>Minimum Requirements</h3>
 				(met by Google Chrome web browser).
 				<ol>
@@ -96,54 +110,7 @@ The main view has many tabs: main, conference, preferences, help.
           <li>Flash Player version 10.3 or later.</li>
 				</ol>
 				
-				<!--script type="text/javascript" language="JavaScript">
-        var hasProductInstall = DetectFlashVer(6, 0, 65);
-        var hasRequiredVersion = DetectFlashVer(10, 3, 0);
-				if (hasProductInstall && !hasRequiredVersion) {
-				  var MMPlayerType = (isIE == true) ? "ActiveX" : "PlugIn";
-          var MMredirectURL = window.location;
-          document.title = document.title.slice(0, 47) + " - Flash Player Installation";
-          var MMdoctitle = document.title;
-
-          AC_FL_RunContent(
-								"src", "playerProductInstall",
-								"FlashVars", "MMredirectURL="+MMredirectURL+'&MMplayerType='+MMPlayerType+'&MMdoctitle='+MMdoctitle+"",
-								"width", "240",
-								"height", "180",
-								"align", "middle",
-								"id", "video1",
-								"quality", "high",
-								"bgcolor", "#ffffff",
-								"wmode", "transparent",
-								"name", "video1",
-								"allowScriptAccess","always",
-								"type", "application/x-shockwave-flash",
-								"pluginspage", "http://www.adobe.com/go/getflashplayer"
-				  );
-				}
-				</script-->
-				
 				<div id="main_error" style="color: #800000;"></div>
-				
-				<!-- for privacy settings of Flash Player
-        <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"
-            id="privacy" width="240" height="180"
-            codebase="http://fpdownload.macromedia.com/get/flashplayer/current/swflash.cab">
-            <param name="movie" value="VideoIO45.swf" />
-            <param name="quality" value="high" />
-            <param name="bgcolor" value="#ffffff" />
-						<param name="wmode" value="transparent" />
-            <param name="allowScriptAccess" value="always" />
-            <embed src="VideoIO45.swf" quality="high" bgcolor="#ffffff"
-                width="240" height="180" name="privacy" align="middle"
-                play="true" loop="false" quality="high"
-								wmode="transparent" allowScriptAccess="always"
-                type="application/x-shockwave-flash"
-                pluginspage="http://www.adobe.com/go/getflashplayer">
-            </embed>
-        </object>
-				-->
-				
 		</div>
     
   </div>
@@ -151,10 +118,14 @@ The main view has many tabs: main, conference, preferences, help.
   <div id="div-conference" class="content has-shadow" style="visibility: hidden;">
     <div id="user-list-box" class="content-box">
       <div class="content-header">Participants
-				<img id="hand-icon" src="hand_icon_16x16.png" class="hand-icon" title="click here to raise/unraise hand"
+				<img id="hand-icon" src="hand_icon_16x16.png" class="button-icon" title="click here to raise/unraise hand"
 				    onclick="room.raise_hand()"></img>
-				<img id="document-icon" src="document_icon_16x16.png" class="document-icon" title="click here to share slides"
+				<img id="document-icon" src="document_icon_16x16.png" class="button-icon" title="click here to share slides"
 				    onclick="room.share_slides()"></img>
+				<!--
+				<img id="add-icon" src="add_icon_15x15.png" class="button-icon" title="click here to invite people to this conference"
+						onclick="room.invite_people()"></img>
+				-->
       </div>
       <div id="user-list">
         <ul id="participants" class="participants">
@@ -162,7 +133,10 @@ The main view has many tabs: main, conference, preferences, help.
       </div>
 	  </div>
     <div id="text-chat-box" class="content-box">
-      <div class="content-header">Text Chat</div>
+      <div class="content-header">Text Chat
+				<img id="close-icon" src="close_icon_16x16.png" class="button-icon" title="click here to clear your chat history"
+						 onclick="room.clear_chathistory()"></img>
+			</div>
       <div id="chat-history"></div>
       <div id="chat-input">
 
@@ -228,6 +202,8 @@ The main view has many tabs: main, conference, preferences, help.
           <input type="checkbox" id="change_persistent"/>
         </td></tr><tr><td align="right">Auto-start new participant's video:</td><td>
           <input type="checkbox" id="change_video_auto"/>
+        </td></tr><tr><td align="right">Show per participant video controls:</td><td>
+          <input type="checkbox" id="change_video_controls"/>
         </td></tr><tr><td align="right">Allow HTML in text chat:</td><td>
           <input type="checkbox" id="change_allow_html"/>
         </td></tr><tr><td align="right">Show header banner at top:</td><td>
@@ -236,7 +212,7 @@ The main view has many tabs: main, conference, preferences, help.
           <input type="checkbox" id="change_show_footer" checked/>
         </td></tr><tr><td colspan="2" align="center">
           <input id="save-conference-settings" type="button" value="Save" class="button"
-				    onclick="room.change_conference_settings($('change_persistent').checked,$('change_video_auto').checked,$('change_allow_html').checked,$('change_show_header').checked,$('change_show_footer').checked)"></input>
+				    onclick="room.change_conference_settings($('change_persistent').checked,$('change_video_auto').checked,$('change_allow_html').checked,$('change_show_header').checked,$('change_show_footer').checked,$('change_video_controls').checked)"></input>
         </td></tr>
       </table>
     </div>
@@ -254,22 +230,9 @@ The main view has many tabs: main, conference, preferences, help.
 			<br/>
 			Please click on "Allow" and "Remember" below.<br/>
 			<center>
-			  <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"
-            id="privacy" width="216" height="139"
-            codebase="http://fpdownload.macromedia.com/get/flashplayer/current/swflash.cab">
-            <param name="movie" value="VideoIO45.swf" />
-            <param name="quality" value="high" />
-            <param name="bgcolor" value="#ffffff" />
-						<param name="wmode" value="transparent" />
-            <param name="allowScriptAccess" value="always" />
-            <embed src="VideoIO45.swf" quality="high" bgcolor="#ffffff"
-                width="216" height="139" name="privacy" align="middle"
-                play="true" loop="false" quality="high"
-								wmode="transparent" allowScriptAccess="always"
-                type="application/x-shockwave-flash"
-                pluginspage="http://www.adobe.com/go/getflashplayer">
-            </embed>
-        </object>
+				<script type="text/javascript">
+						document.write(getVideoIO("privacy", "", "216", "139", "#ffffff", "transparent"));
+				</script>
 			</center>
 			<br/>
     </div>
@@ -288,14 +251,11 @@ The main view has many tabs: main, conference, preferences, help.
 		-->
 		
     <div id="preferences-error" style="color: #800000; position: absolute; left: 360px; top: 320px;"></div>
-				
+		
   </div>
   
-  <div id="div-help" class="content has-shadow" style="visibility: hidden;">
-    <h3>What is IIT Web Conference?</h3>
-		This is a web application to enable multiparty audio/video conference and slides presentation.
-		<br/>
-		TODO: fill in more details
+  <div id="div-help" class="content has-shadow" style="visibility: hidden; overflow: hidden; top: 32px; bottom: 0px;">
+		<iframe width="100%" height="100%" src="help.html"></iframe>
   </div>
 </div>
 
