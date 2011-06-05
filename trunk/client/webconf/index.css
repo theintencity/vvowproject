@@ -186,7 +186,7 @@ div#join-conf-box {
   top: 20px;
   height: 150px;
   left: 20px;
-  width: 300px;
+  width: 310px;
   /* border: 1px solid #a0a0a0;*/
 }
 div#create-conf-box {
@@ -194,19 +194,19 @@ div#create-conf-box {
   top: 190px;
   height: 170px;
   left: 20px;
-  width: 300px;
+  width: 310px;
   /* border: 1px solid #a0a0a0;*/
 }
 div#login-only-box {
   position: absolute;
   top: 20px;
-  left: 340px;
+  left: 350px;
   height: 80px;
   width: 270px;
 }
 div#min-requirements {
   position: absolute;
-  left: 340px;
+  left: 350px;
   top: 10px;
 }
 div#chat-history {
