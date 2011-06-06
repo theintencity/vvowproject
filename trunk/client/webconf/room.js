@@ -467,17 +467,17 @@ var room = {
         
     on_userlist_update: function(request) {
         // got a new user list update
-        if (request.create != null) {
+        if (request.create) {
             var user = request.entity;
             user.id = request.create;
             this.userlist.push(user);
             this.on_userlist_added(user);
             this.info(user.name + " joined");
-        } else if (request.update != null) {
+        } else if (request.update) {
             var user = request.entity;
             user.id = request.update;
             this.on_userlist_changed(user);
-        } else if (request['delete'] != null) {
+        } else if (request['delete']) {
             for (var i=0; i<this.userlist.length; ++i) {
                 var user = this.userlist[i];
                 if (user.id == request['delete']) {
@@ -547,7 +547,10 @@ var room = {
         checkbox.type = "checkbox";
         checkbox.checked = user.video;
         checkbox.disabled = !this.is_moderator;
-        checkbox.addEventListener("click", function() { room.on_userlist_click(user); return false; });
+        if (checkbox.addEventListener)
+            checkbox.addEventListener("click", function() { room.on_userlist_click(user); return false; }, false);
+        else if (checkbox.attachEvent)
+            checkbox.attachEvent("onclick", function() { room.on_userlist_click(user); return false; });
         
         child.appendChild(checkbox);
         child.appendChild(document.createTextNode(user.name));
@@ -1016,13 +1019,18 @@ var room = {
             }
             
             child.innerHTML = '<object type="application/x-shockwave-flash"'
+            //child.innerHTML = '<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://fpdownload.macromedia.com/get/flashplayer/current/swflash.cab"'
                                 + 'id="slides1" width="100%" height="100%">'
                                 + '<param name="movie" value="' + url + '" />'
                                 + '<param name="quality" value="high" />'
                                 + '<param name="bgcolor" value="#ffffff" />'
                                 + '<param name="allowFullScreen" value="true" />'
                                 + '<param name="allowScriptAccess" value="always" />'
-                                + '<param name="wmode" value="opaque" />'
+                                + '<param name="wmode" value="window" />'
+            //                    + '<embed id="slides2" src="' + url + '" quality="high" bgcolor="#ffffff" width="100%" height="100%"'
+           //                     + '    align="middle" play="true" loop="false" allowFullScreen="true" allowScriptAccess="always"'
+           //                     + '    wmode="window" type="application/x-shockwave-flash"'
+           //                     + '    pluginspage=http://www.adobe.com/go/getflashplayer"></embed>'
                                 + '</object>';
             if (this.is_moderator) {
                 child.innerHTML += '<button onclick="room.stop_presentation();" class="closebutton" title="close presentation">X</button>'
@@ -1047,8 +1055,8 @@ var room = {
     },
     
     get_mouse_pos: function(evt) {
-        return {"x": (window.event ? event.x: evt.x) - $('slides').getBoundingClientRect().left,
-                "y": (window.event? event.y : evt.y) - $('slides').getBoundingClientRect().top,
+        return {"x": (window.event ? event.x: evt.clientX) - $('slides').getBoundingClientRect().left,
+                "y": (window.event? event.y : evt.clientY) - $('slides').getBoundingClientRect().top,
                 "w": $('slides').clientWidth, "h": $('slides').clientHeight};
     },
     
@@ -1094,9 +1102,9 @@ var room = {
         
         var selected = $("div-" + name);
         var children = $("div-main").childNodes;
-        for (var i in children) {
+        for (var i=0; i<children.length; ++i) {
             var child = children[i];
-            if (child.nodeType == 1 && child.localName == "div") {
+            if (child.nodeType == 1 && child.nodeName.toLowerCase() == "div") {
                 child.style.visibility = (selected == child ? "visible": "hidden");
             }
         }
@@ -1107,7 +1115,7 @@ var room = {
     //-------------------------------------------
     
     colors: { 'You': 'blue', 'They': 'green',
-            'info': 'grey', 'warn': 'red', 'error': 'red', 'normal': 'black' },
+            'info': '#808080', 'warn': '#ff0000', 'error': '#ff0000', 'normal': '#000000' },
     
     color: function(user, msg) {
         return (this.colors[user] != undefined) ?

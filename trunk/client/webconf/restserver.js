@@ -3,7 +3,7 @@
 
 var restserver = {
     // the websocket address to connect to
-    websocket_url: "ws://127.0.0.1:8080/server.php",
+    websocket_url: "ws://127.0.0.1:8080/restserver.php",
     
     // the web socket to the server
     socket: null,
