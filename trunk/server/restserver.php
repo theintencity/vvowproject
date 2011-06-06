@@ -17,9 +17,9 @@ $users = array();
 $debug = true;
 
 $db_hostname = '127.0.0.1';
-$db_database = 'kundanproject';
-$db_username = 'kundan';
-$db_password = 'vowWebrtc';
+$db_database = 'xxxxx';
+$db_username = 'root';
+$db_password = 'mypassword';
 
 //-----------------------------------------------
 // Main: connect database, start websocket server
