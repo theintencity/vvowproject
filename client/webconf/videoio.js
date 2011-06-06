@@ -42,7 +42,7 @@ function getVideoIO(id, flashVars, width, height, bgcolor, wmode) {
     if (wmode == undefined)
         wmode = 'window';
     return '<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"\
-    id="video-' + id + '" width="' + width + '" height="' + height + '"\
+    id="' + id + '" width="' + width + '" height="' + height + '"\
     codebase="http://fpdownload.macromedia.com/get/flashplayer/current/swflash.cab">\
     <param name="movie" value="' + VideoIO + '" />\
     <param name="quality" value="high" />\
@@ -51,7 +51,7 @@ function getVideoIO(id, flashVars, width, height, bgcolor, wmode) {
     <param name="allowFullScreen" value="true" />\
     <param name="allowScriptAccess" value="always" />\
     <param name="wmode" value="' + wmode + '" />\
-    <embed src="' + VideoIO + '" quality="high" bgcolor="' + bgcolor + '"\
+    <embed src="' + VideoIO + '" bgcolor="' + bgcolor + '"\
         width="' + width + '" height="' + height + '" name="' + id + '" align="middle"\
         play="true" loop="false" quality="high"\
         flashVars="' + flashVars + '"\
