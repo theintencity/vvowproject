@@ -10,15 +10,16 @@ error_reporting(E_ALL);
 set_time_limit(0);
 ob_implicit_flush();
 
-$master = WebSocket("0.0.0.0", 8080);
+$port = 8080;
+$master = WebSocket("0.0.0.0", $port);
 $sockets = array($master);
 $users = array();
 $debug = true;
 
 $db_hostname = '127.0.0.1';
-$db_database = 'xxxxx';
-$db_username = 'root';
-$db_password = 'somepass';
+$db_database = 'kundanproject';
+$db_username = 'kundan';
+$db_password = 'vowWebrtc';
 
 //-----------------------------------------------
 // Main: connect database, start websocket server
@@ -491,9 +492,22 @@ function disconnect($socket) {
 }
 
 function dohandshake($user, $buffer) {
-    global $sockets;
+    global $sockets, $port;
     console("\nRequesting handshake...");
     console($buffer);
+    if (substr($buffer, 0, 22) == "<policy-file-request/>") {
+        console("Responding with policy file request...");
+        $response = '<!DOCTYPE cross-domain-policy SYSTEM "http://www.macromedia.com/xml/dtds/cross-domain-policy.dtd">\n'
+            . '<cross-domain-policy><allow-access-from domain="*" to-ports="' . $port . '" secure="false"/></cross-domain-policy>';
+        socket_write($user->socket, $response, strlen($response));
+        $index = array_search($user->socket, $sockets);
+        if ($index >= 0) {
+            array_splice($sockets, $index, 1);
+        }
+        socket_close($user->socket);
+        return false;
+    }
+    
     list($resource, $host, $origin, $strkey1, $strkey2, $data) = getheaders($buffer);
     console("Handshaking...");
 
