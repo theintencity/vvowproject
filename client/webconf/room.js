@@ -301,7 +301,7 @@ var room = {
         if (old.persistent && !data.persistent) {
             this.info("Text chat messages are for this session only");
         } else if (!old.persistent && data.persistent) {
-            this.info("Text chat messages are persistent now");
+            this.info("Text chat messages are persistent");
         }
         if (old.video_controls && !data.video_controls) {
             this.info("Removed participant video controls");
@@ -624,7 +624,7 @@ var room = {
                     this.stream_url = null;
                 }
             }
-            if (user.raise_hand != changed.raise_hand) {
+            if ((user.raise_hand ? true : false) != (changed.raise_hand ? true : false)) {
                 user.raise_hand = changed.raise_hand ? true : false;
                 if (user.raise_hand) {
                     if (!$("user-hand-" + user.id)) {
@@ -872,6 +872,84 @@ var room = {
         //log("resize_handler: count=" + count);
         //log(room.layout);
         room.layout_boxes(count);
+    },
+
+    //-------------------------------------------
+    // METHODS visual layout positions
+    //-------------------------------------------
+    
+    visual_layout: {
+        "false-false": {
+            "user-list-box": ["hidden"],
+            "text-chat-box": ["hidden"],
+            "videos-box"   : ["inherit", "10px", "10px", "auto", "10px", "10px", "auto"]
+        },
+        "left-false": {
+            "user-list-box": ["inherit", "10px", "auto", "200px", "10px", "10px", "auto"],
+            "text-chat-box": ["hidden"],
+            "videos-box"   : ["inherit", "220px", "10px", "auto", "10px", "10px", "auto"]
+        },
+        "right-false": {
+            "user-list-box": ["inherit", "auto", "10px", "200px", "10px", "10px", "auto"],
+            "text-chat-box": ["hidden"],
+            "videos-box"   : ["inherit", "10px", "220px", "auto", "10px", "10px", "auto"]
+        },
+        "false-left": {
+            "user-list-box": ["hidden"],
+            "text-chat-box": ["inherit", "10px", "auto", "200px", "10px", "10px", "auto"],
+            "videos-box"   : ["inherit", "220px", "10px", "auto", "10px", "10px", "auto"]
+        },
+        "false-right": {
+            "user-list-box": ["hidden"],
+            "text-chat-box": ["inherit", "auto", "10px", "200px", "10px", "10px", "auto"],
+            "videos-box"   : ["inherit", "10px", "220px", "auto", "10px", "10px", "auto"]
+        },
+        "left-left": {
+            "user-list-box": ["inherit", "10px", "auto", "200px", "10px", "auto", "190px"],
+            "text-chat-box": ["inherit", "10px", "auto", "200px", "210px", "10px", "auto"],
+            "videos-box"   : ["inherit", "220px", "10px", "auto", "10px", "10px", "auto"]
+        },
+        "right-right": {
+            "user-list-box": ["inherit", "auto", "10px", "200px", "10px", "auto", "190px"],
+            "text-chat-box": ["inherit", "auto", "10px", "200px", "210px", "10px", "auto"],
+            "videos-box"   : ["inherit", "10px", "220px", "auto", "10px", "10px", "auto"]
+        },
+        "left-right": {
+            "user-list-box": ["inherit", "10px", "auto", "200px", "10px", "10px", "auto"],
+            "text-chat-box": ["inherit", "auto", "10px", "200px", "10px", "10px", "auto"],
+            "videos-box"   : ["inherit", "220px", "220px", "auto", "10px", "10px", "auto"]
+        },
+        "right-left": {
+            "user-list-box": ["inherit", "auto", "10px", "200px", "10px", "10px", "auto"],
+            "text-chat-box": ["inherit", "10px", "auto", "200px", "10px", "10px", "auto"],
+            "videos-box"   : ["inherit", "220px", "220px", "auto", "10px", "10px", "auto"]
+        }
+    },
+    
+    change_visual_layout: function(participant, participant_left, chathistory, chathistory_left) {
+        var first = (participant ? (participant_left ? "left": "right") : "false");
+        var second = (chathistory ? (chathistory_left ? "left": "right") : "false");
+        var layout = this.visual_layout[first + "-" + second];
+        for (var s in layout) {
+            if (typeof layout[s] != "function") {
+                var attrs = layout[s];
+                log(s + " " + attrs);
+                try {
+                    $(s).style.visibility = attrs[0];
+                    if (attrs[0] != "hidden") {
+                        $(s).style.left   = attrs[1];
+                        $(s).style.right  = attrs[2];
+                        $(s).style.width  = attrs[3];
+                        $(s).style.top    = attrs[4];
+                        $(s).style.bottom = attrs[5];
+                        $(s).style.height = attrs[6];
+                    }
+                } catch (e) {
+                    log(s + " " + e);
+                }
+            }
+        }
+        this.on_select_tab("conference");
     },
 
     //-------------------------------------------

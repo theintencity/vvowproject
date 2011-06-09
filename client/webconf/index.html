@@ -251,18 +251,29 @@ The main view has many tabs: main, conference, preferences, help.
 			<br/>
     </div>
 		
-		<!--
-    <div class="content-box" style="width: 330px; position: absolute; left: 360px; top: 290px;">
-      <div class="content-header">Visual Layout</div>
-			<center>
-				
-				<input type="button" value="Save" class="button"
-					onclick="room.change_moderator_password(sanitize($('change_moderator_password_current').value),
-																sanitize($('change_moderator_password').value),
-																sanitize($('change_moderator_password').value))"></input>
-			</center>
+    <div class="content-box" style="width: 330px; position: absolute; left: 360px; top: 240px;">
+      <div class="content-header">Visual Layout (only for your view)</div>
+      <table width="100%">
+        </td></tr><tr><td align="right">Show or hide the participant list box:</td><td>
+          <input type="checkbox" id="change_show_participant" checked
+						title="Show or hide the participant list box"/>
+        </td></tr><tr><td colspan="2" align="right">
+				  Position of participant list box:
+          Left <input type="radio" value="left" name="change_show_participant_position" id="change_show_participant_left" checked/> or 
+          Right <input type="radio" value="right" name="change_show_participant_position" id="change_show_participant_right"/>
+        </td></tr><tr><td align="right">Show or hide the text chat messages box:</td><td>
+          <input type="checkbox" id="change_show_chathistory" checked
+					  title="Show or hide the text chat messages box"/>
+        </td></tr><tr><td colspan="2" align="right">
+				  Position of chat history box:
+          Left <input type="radio" value="left" name="change_show_chathistory_position" id="change_show_chathistory_left" checked/> or 
+          Right <input type="radio" value="right" name="change_show_chathistory_position" id="change_show_chathistory_right"/>
+        </td></tr><tr><td colspan="2" align="center">
+				  <input type="button" value="Change" class="button"
+					  onclick="room.change_visual_layout($('change_show_participant').checked,$('change_show_participant_left').checked,$('change_show_chathistory').checked,$('change_show_chathistory_left').checked)"></input>
+        </td></tr>
+      </table>
 		</div>
-		-->
 		
     <div id="preferences-error" style="color: #800000; position: absolute; left: 360px; top: 320px;"></div>
 		

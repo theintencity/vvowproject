@@ -169,13 +169,6 @@ div#user-list-box {
   left: 10px;
   width: 200px; 
 }
-div#user-list-box {
-  position: absolute;
-  top: 10px;
-  height: 190px;
-  left: 10px;
-  width: 200px; 
-}
 div#text-chat-box {
   position: absolute;
   top: 210px;
