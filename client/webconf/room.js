@@ -949,6 +949,7 @@ var room = {
                 }
             }
         }
+        this.resize_handler();
         this.on_select_tab("conference");
     },
 
