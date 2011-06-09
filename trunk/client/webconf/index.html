@@ -34,8 +34,10 @@ The connecting prompt displays with z-index 100
 The header displays the banner.
 -->
 <div id="div-header" class="has-shadow">
-  <div class="has-gradient"><span class="heading"><img src="iit-icon.png" width="16px" height="16px"></img> IIT Web Conference</span></div>
-	<span class="footer">For demonstration at
+  <div class="has-gradient"><span class="heading">
+	<img src="iit-icon.png" width="16px" height="16px"></img> IIT Web Conference</span></div>
+	<span class="footer">
+  For demonstration at
 	<a href="http://www.cvent.com/events/7th-annual-real-time-communications-conference-and-expo/event-summary-ffc3acffa5af4bddae7a33f788e37f56.aspx">
 	7th Annual Real-Time Communications Conference and Expo</a>, Oct 4-6, 2011, Chicago Area</span>
 </div>
@@ -205,17 +207,23 @@ The main view has many tabs: main, conference, preferences, help.
       <div class="content-header">Conference Settings</div>
       <table width="100%">
         </td></tr><tr><td align="right">Is this a persistent conference:</td><td>
-          <input type="checkbox" id="change_persistent"/>
+          <input type="checkbox" id="change_persistent"
+						title="A persistent conference preserves any text chat messages and is not deleted when the owner leaves"/>
         </td></tr><tr><td align="right">Auto-start new participant's video:</td><td>
-          <input type="checkbox" id="change_video_auto"/>
+          <input type="checkbox" id="change_video_auto"
+					  title="Auto-start video stream of a new participant on join, instead of waiting for moderator to enable his video"/>
         </td></tr><tr><td align="right">Show per participant video controls:</td><td>
-          <input type="checkbox" id="change_video_controls"/>
+          <input type="checkbox" id="change_video_controls"
+					  title="Display video controls below the video box for each participant to control the audio and video"/>
         </td></tr><tr><td align="right">Allow HTML in text chat:</td><td>
-          <input type="checkbox" id="change_allow_html"/>
+          <input type="checkbox" id="change_allow_html"
+					  title="Allow markups in text chat, so that sender can change font, color, size, etc., of text chat messages"/>
         </td></tr><tr><td align="right">Show header banner at top:</td><td>
-          <input type="checkbox" id="change_show_header" checked/>
+          <input type="checkbox" id="change_show_header" checked
+						title="Display the top header box"/>
         </td></tr><tr><td align="right">Show footer banner at bottom:</td><td>
-          <input type="checkbox" id="change_show_footer" checked/>
+          <input type="checkbox" id="change_show_footer" checked
+						title="Display the bottom project resources box"/>
         </td></tr><tr><td colspan="2" align="center">
           <input id="save-conference-settings" type="button" value="Save" class="button"
 				    onclick="room.change_conference_settings($('change_persistent').checked,$('change_video_auto').checked,$('change_allow_html').checked,$('change_show_header').checked,$('change_show_footer').checked,$('change_video_controls').checked)"></input>
