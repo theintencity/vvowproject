@@ -167,14 +167,14 @@ div#user-list-box {
   top: 10px;
   height: 190px;
   left: 10px;
-  width: 200px; 
+  width: 200px;
 }
 div#text-chat-box {
   position: absolute;
   top: 210px;
   bottom: 10px;
   left: 10px;
-  width: 200px; 
+  width: 200px;
 }
 div#join-conf-box {
   position: absolute;
@@ -233,11 +233,17 @@ div.video {
   position: absolute;
   background-color: #000000;
 }
+div#user-list {
+  position: absolute;
+  overflow: auto;
+  top: 20px;
+  bottom: 0px;
+  width: 100%;
+}
 ul.participants {
   list-style: none;
   margin: 0;
   padding: 0;
-  overflow: auto;
 }
 ul.participants li {
   clear: left;
