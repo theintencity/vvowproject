@@ -54,6 +54,10 @@ var room = {
     min_video_width: 216,
     min_video_height: 162,
     
+    // rx quality sending
+    send_rx_quality_timer: null,
+    send_rx_quality_interval: 10000,
+    
     //-------------------------------------------
     // METHODS invoked by restserver
     //-------------------------------------------
@@ -95,6 +99,8 @@ var room = {
         } else if (request.notify == "NOTIFY" && request.resource == "/webconf/" + room.room_id + "/presentation") {
             if (request.data.mouse)
                 room.on_presenter_mouse_move(request);
+        } else if (request.notify == "UPDATE" && request.resource == "/webconf/" + room.room_id + "/userlist/" + room.user_id + "/rxquality") {
+            room.on_rx_quality_update(request);
         }
     },
 
@@ -111,6 +117,9 @@ var room = {
         //room.resize_handler();
         
         this.stream = "webconf" + Math.random();
+        
+        this.show_media_quality(false);
+        this.show_network_quality(null, false);
     },
     
     create: function(room_name, user_name, user_password, verify_password) {
@@ -202,6 +211,9 @@ var room = {
         setTimeout("room.subscribe_chathistory()", 600);
         setTimeout("room.subscribe_presentation()", 800);
         setTimeout("room.get_presentation()", 1000);
+        if (room.send_rx_quality_timer == null) {
+          room.send_rx_quality_timer = setInterval("room.send_rx_quality()", room.send_rx_quality_interval);
+        }
     },
     
     logout: function() {
@@ -212,6 +224,11 @@ var room = {
       }
       $("chat-history").innerHTML = "";
       this.set_preferences(this.get_default_preferences());
+      
+      if (this.send_rx_quality_timer != null) {
+        clearInterval(this.send_rx_quality_timer);
+        this.send_rx_quality_timer = null;
+      }
     },
     
     get_roomlist: function(callback) {
@@ -497,6 +514,7 @@ var room = {
                 if (response.code == "success") {
                     room.user_id = response.id;
                     room.subscribe_my_user();
+                    room.subscribe_rx_quality();
                 } else {
                     room.info('login failed ' + response.reason);
                 }
@@ -565,6 +583,8 @@ var room = {
             this.add_video(user.id);
             this.resize_handler();
         }
+        
+        this.show_network_quality(user.id, true);
     },
     
     on_userlist_removed: function(user) {
@@ -574,6 +594,7 @@ var room = {
         }
         this.remove_video(user.id);
         this.resize_handler();
+        this.show_network_quality(user.id, false);
     },
     
     on_userlist_click: function(user) {
@@ -692,6 +713,11 @@ var room = {
                 this.maximized = null;
             }
         }
+        this.set_receive_quality(user_id); // will set to empty for this
+        if (user_id == this.user_id) {
+            this.set_transmit_quality(null, null); // will set to empty for all
+            this.show_media_quality(false);
+        }
     },
   
     on_video_stream_created: function(user_id, stream_url) {
@@ -705,6 +731,7 @@ var room = {
                         room.warn("cannot publish my video stream location: " + response.reason);
                     }
                 });
+            this.show_media_quality(true);
         } else {
             var user = this.get_user_by_id(user_id);
             if (user && user.video && user.stream_url) {
@@ -713,6 +740,7 @@ var room = {
                     video.setProperty("src", user.stream_url);
                 }
             }
+            this.set_receive_quality(user_id); // will set to empty
         }
     },
     
@@ -1189,6 +1217,181 @@ var room = {
         }
     },
 
+    //-------------------------------------------
+    // METHODS network quality control and display
+    //-------------------------------------------
+
+    show_media_quality: function(value) {
+        try {
+            var children = $("transmit-quality").childNodes;
+            for (var i=0; i<children.length; ++i) {
+                var child = children[i];
+                if (child.nodeType == 1 &&
+                    (child.nodeName.toLowerCase() == "input" || child.nodeName.toLowerCase() == "select")) {
+                    child.disabled = !value;
+                }
+            }
+            if (!value) { // change UI to default values
+                $("encodeQuality_default").selected = "selected";
+                $("cameraQuality_default").selected = "selected";
+                $("cameraBandwidth_default").selected = "selected";
+                $("cameraFPS_default").selected = "selected";
+                $("cameraDimension_default").selected = "selected";
+                
+                $("microphone").checked = true;
+                $("camera").checked = true;
+                $("cameraLoopback").checked = false;
+                $("currentFPS").innerHTML = "0";
+            }
+        } catch (e) {
+            log(e);
+        }
+    },
+    
+    show_network_quality: function(user_id, value) {
+        try {
+            if (user_id == null && value == false) {
+                $("receive-quality").innerHTML = "";
+            }
+            if (user_id && user_id != this.user_id) {
+                if (value) {
+                    if ($("quality-rx-" + user_id) == null) {
+                        var rx = document.createElement("div");
+                        rx.id = "quality-rx-" + user_id;
+                        $("receive-quality").appendChild(rx);
+                        var tx = document.createElement("div");
+                        tx.id = "quality-tx-" + user_id;
+                        $("receive-quality").appendChild(tx);
+                    }
+                } else {
+                    var rx = $("quality-rx-" + user_id);
+                    if (rx)
+                        $("receive-quality").removeChild(rx);
+                    var tx = $("quality-tx-" + user_id);
+                    if (tx)
+                        $("receive-quality").removeChild(tx);
+                }
+            }
+        } catch (e) {
+            log(e);
+        }
+    },
+    
+    set_receive_quality: function(user_id) {
+        var user = this.get_user_by_id(user_id);
+        if (user) {
+            var child = $("quality-rx-" + user_id);
+            if (child) {
+                var video = getFlashMovie("video-" + user_id);
+                if (user.video && getFlashMovie("video-" + user_id)) {
+                    var bw = video.getProperty("bandwidth");
+                    var q  = video.getProperty("quality");
+                    bw =  (isNaN(bw) ? "undefined" : "" + Math.round(bw/1000) + " kb/s");
+                    q =  (isNaN(q) ? "undefined" : "" + q);
+                    child.innerHTML = "&lt;= <b>" + user.name + "</b>: bandwidth: " + bw + ", quality: " + q;
+                } else if (child.innerHTML != "") {
+                    child.innerHTML = "";
+                }
+            }
+        }
+    },
+
+    set_transmit_quality: function(user_id, entity) {
+        for (var i=0; i<this.userlist.length; ++i) {
+            var user = this.userlist[i];
+            if (user && (user_id == null || user.id == user_id)) {
+                var child = $("quality-tx-" + user.id);
+                if (child) {
+                    if (entity) {
+                        var bw = entity.bandwidth;
+                        var q  = entity.quality;
+                        bw =  (isNaN(bw) ? "undefined" : "" + Math.round(bw/1000) + " kb/s");
+                        q =  (isNaN(q) ? "undefined" : "" + q);
+                        child.innerHTML = "=&gt; <b>" + user.name + "</b>: bandwidth: " + bw + ", quality: " + q;
+                    } else if (child.innerHTML != "") {
+                        child.innerHTML = "";
+                    }
+                }
+            }
+        }
+    },
+    
+    set_video_property: function(name) {
+        if (this.user_id) {
+            var video = getFlashMovie("video-" + this.user_id);
+            if (video) {
+                if (name == "microphone" || name == "camera" || name == "cameraLoopback") {
+                    video.setProperty(name, $(name).checked ? true : false);
+                } else if (name == "encodeQuality" || name == "cameraQuality" || name == "cameraBandwidth" || name == "cameraFPS") {
+                    video.setProperty(name, parseInt($(name).value));
+                } else if (name == "cameraDimension") {
+                    var parts = $(name).value.split("x");
+                    if (parts.length == 2) {
+                        video.setProperty("cameraWidth", parseInt(parts[0]));
+                        video.setProperty("cameraHeight", parseInt(parts[1]));
+                    }
+                }
+            }
+        }
+        return true;
+    },
+    
+    on_video_propertychange: function(user_id, property, value) {
+        if ((property == "bandwidth" || property == "quality") && user_id != this.user_id) {
+            this.set_receive_quality(user_id);
+        }
+        if (user_id == this.user_id) {
+            if (property == "microphone" || property == "camera" || property == "cameraLoopback")
+                $(property).checked = value;
+            else if (property == "currentFPS") {
+                $(property).innerHTML = "" + Math.round(value);
+            }
+        }
+    },
+
+    subscribe_rx_quality: function() {
+        restserver.send({"method": "SUBSCRIBE", "resource": "/webconf/" + this.room_id + "/userlist/" + this.user_id + "/rxquality"});
+    },
+    
+    send_rx_quality: function() {
+        try {
+            if (room.user_id != null) {
+                for (var i=0; i<room.userlist.length; ++i) {
+                    var user = room.userlist[i];
+                    var user_id = user.id;
+                    if (user.id != room.user_id) {
+                        if (user.video && getFlashMovie("video-" + user.id)) {
+                            var video = getFlashMovie("video-" + user.id);
+                            var bw = video.getProperty("bandwidth");
+                            var q = video.getProperty("quality");
+                            restserver.send({"method": "PUT", "resource": "/webconf/" + room.room_id + "/userlist/" + user_id + "/rxquality/" + room.user_id,
+                                "entity": {"bandwidth": bw, "quality": q}});
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            log(e);
+        }
+    },
+    
+    on_rx_quality_update: function(request) {
+        if (request.update) {
+            var user_id = request.update;
+            if (request.entity) { // already has changed entity
+                room.set_transmit_quality(user_id, request.entity);
+            } else { // need to fetch separately
+                restserver.send({"method": "GET", "resource": "/webconf/" + room.room_id + "/userlist/" + this.user_id + "/rxquality/" + user_id},
+                    function(response) {
+                        if (response.code == "success") {
+                            var user_id = room.get_resource_end(response.resource);
+                            room.set_transmit_quality(user_id, response.entity);
+                        }
+                    });
+            }
+        }
+    },
+    
     //-------------------------------------------
     // Help and utilities
     //-------------------------------------------

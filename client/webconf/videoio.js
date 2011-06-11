@@ -24,6 +24,9 @@ function onPropertyChange(event) {
             room.on_video_stream_created(event.objectID.substr(6), stream_url);
         }
     }
+    if (event.objectID.substr(0, 6) == "video-") {
+        room.on_video_propertychange(event.objectID.substr(6), event.property, event.newValue);
+    }
 }
 
 var hasVersion10 = DetectFlashVer(10, 0, 0);
