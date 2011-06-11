@@ -46,6 +46,12 @@ var restserver = {
                 $(this.text_id).innerHTML = "Connecting...";
             }
             
+            if (WebSocket.loadFlashPolicyFile && this.websocket_url.substr(0, 5) == "ws://") {
+              var policyfile = "xmlsocket://" + 
+                   this.websocket_url.substr(5, this.websocket_url.indexOf('/', 5)-5);
+              WebSocket.loadFlashPolicyFile(policyfile);
+            }
+
             this.socket = new WebSocket(this.websocket_url);
             log('websocket.init: status=' + this.socket.readyState);
             
