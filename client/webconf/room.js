@@ -697,7 +697,7 @@ var room = {
         };
         $("videos-box").appendChild(child);
         
-        var flashVars = 'cameraQuality=80' + (this.preferences.video_controls ? '&controls=true' : '');
+        var flashVars = 'cameraQuality=80&cameraWidth=240&cameraHeight=180' + (this.preferences.video_controls ? '&controls=true' : '');
         if (VideoIO) {
             child.innerHTML = getVideoIO("video-" + user_id, flashVars);
         } else {
@@ -1286,9 +1286,9 @@ var room = {
                 if (user.video && getFlashMovie("video-" + user_id)) {
                     var bw = video.getProperty("bandwidth");
                     var q  = video.getProperty("quality");
-                    bw =  (isNaN(bw) ? "undefined" : "" + Math.round(bw/1000) + " kb/s");
+                    bw =  (isNaN(bw) ? "undefined" : "" + Math.round(bw*8/1000) + " kb/s");
                     q =  (isNaN(q) ? "undefined" : "" + q);
-                    child.innerHTML = "&lt;= <b>" + user.name + "</b>: bandwidth: " + bw + ", quality: " + q;
+                    child.innerHTML = "&lt;= <b>" + user.name + "</b>: bandwidth: " + bw + ", delay quality: " + q;
                 } else if (child.innerHTML != "") {
                     child.innerHTML = "";
                 }
@@ -1305,9 +1305,9 @@ var room = {
                     if (entity) {
                         var bw = entity.bandwidth;
                         var q  = entity.quality;
-                        bw =  (isNaN(bw) ? "undefined" : "" + Math.round(bw/1000) + " kb/s");
+                        bw =  (isNaN(bw) ? "undefined" : "" + Math.round(bw*8/1000) + " kb/s");
                         q =  (isNaN(q) ? "undefined" : "" + q);
-                        child.innerHTML = "=&gt; <b>" + user.name + "</b>: bandwidth: " + bw + ", quality: " + q;
+                        child.innerHTML = "=&gt; <b>" + user.name + "</b>: bandwidth: " + bw + ", delay quality: " + q;
                     } else if (child.innerHTML != "") {
                         child.innerHTML = "";
                     }
