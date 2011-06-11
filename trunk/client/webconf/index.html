@@ -231,6 +231,8 @@ The main view has many tabs: main, conference, preferences, help.
       </table>
     </div>
 		
+    <div id="preferences-error" style="color: #800000; position: absolute; left: 10px; top: 350px;"></div>
+		
     <div class="content-box" style="width: 330px; position: absolute; left: 360px; top: 10px;">
       <div class="content-header">Media and Device Settings</div>
 			<script type="text/javascript">
@@ -275,7 +277,83 @@ The main view has many tabs: main, conference, preferences, help.
       </table>
 		</div>
 		
-    <div id="preferences-error" style="color: #800000; position: absolute; left: 360px; top: 320px;"></div>
+		
+		<div class="content-box" style="width: 350px; position: absolute; left: 710px; top: 10px;">
+		  <div class="content-header">Transmit Media Quality</div>
+				
+			<div id="transmit-quality" style="padding: 4px;">
+				
+				<input id="microphone" type="checkbox" onclick="return room.set_video_property('microphone')" checked/>
+				<b>Microphone</b>
+				
+						quality 
+						<select id="encodeQuality" type="text" onchange="return room.set_video_property('encodeQuality')">
+								<option value="2">poor</option><option value="4">average</option>
+								<option value="6" id="encodeQuality_default" selected="selected">good</option>
+								<option value="8">very good</option><option value="10">excellent</option>
+						</select>
+						<!--onkeypress="if (isEnter(event)) return setNumber('encodeQuality', 'encodeQuality')"/-->
+						<br/>
+				
+				<input id="camera" type="checkbox" onclick="return room.set_video_property('camera')" checked/> 
+				<b>Camera</b>
+				
+						quality
+						<select id="cameraQuality" onchange="return room.set_video_property('cameraQuality')">
+								<option value="50">poor</option><option value="70">average</option>
+								<option value="80" id="cameraQuality_default" selected="selected">good</option>
+								<option value="90">very good</option><option value="95">excellent</option>
+								<option value="0">automatic</option>
+						</select>
+						
+						b/w
+						<select id="cameraBandwidth" onchange="return room.set_video_property('cameraBandwidth')">
+								<option value="4096">very low</option><option value="16384">low</option>
+								<option value="65536">average</option>
+								<option value="131072">high</option><option value="262144">very high</option>
+								<option value="0" id="cameraBandwidth_default" selected="selected">automatic</option>
+						</select>
+						
+						<br/>
+						
+						&nbsp;&nbsp;&nbsp;&nbsp;
+						
+						frames/second
+						<select id="cameraFPS" onchange="return room.set_video_property('cameraFPS')">
+								<option value="1">poor</option><option value="5">average</option>
+								<option value="12" id="cameraFPS_default" selected="selected">good</option>
+								<option value="15">very good</option><option value="24">excellent</option>
+						</select>
+						&nbsp;&nbsp;
+						
+						current value:
+						<span id="currentFPS">0</span>
+						
+						<br/>
+				
+						&nbsp;&nbsp;&nbsp;&nbsp;
+						dimension
+						<select id="cameraDimension" onchange="return room.set_video_property('cameraDimension')">
+								<option value="120x90">x-small</option><option value="200x120">small</option>
+								<option value="240x180">medium</option>
+								<option value="320x240" id="cameraDimension_default" selected="selected">large</option>
+								<option value="640x480">x-large</option>
+						</select>
+						&nbsp;&nbsp;
+						
+						loopback
+						<input id="cameraLoopback" type="checkbox" onclick="return room.set_video_property('cameraLoopback')"/>
+						
+						<br/>
+			</div>
+		</div>
+		
+		<div class="content-box" style="width: 350px; position: absolute; left: 710px; top: 160px;">
+		    <div class="content-header">Network Quality</div>
+				
+				<div id="receive-quality" style="padding: 4px; min-height: 10px;">
+				</div>
+		</div>
 		
   </div>
   
