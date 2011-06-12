@@ -17,7 +17,7 @@ $users = array();
 $debug = true;
 
 $db_hostname = '127.0.0.1';
-$db_database = 'xxxxx';
+$db_database = 'restserver';
 $db_username = 'root';
 $db_password = 'mypassword';
 
@@ -53,6 +53,7 @@ while (true) {
                 if (!$user->handshake) {
                     dohandshake($user, $buffer);
                 } else {
+                    ensure_db();
                     process_multiple($user, $buffer);
                 }
             }
@@ -78,6 +79,20 @@ function connect_db() {
     mysql_query("DELETE FROM resource WHERE cid != ''");
     
     return $db_server;
+}
+
+function ensure_db() {
+    global $db_server, $db_hostname, $db_username, $db_password, $db_database;
+    if (!mysql_ping($db_server)) {
+        say("ERROR: mysql_ping failed. attempting reconnect");
+        mysql_close($db_server);
+        $db_server = mysql_connect($db_hostname, $db_username, $db_password);
+        if (!$db_server) {
+            say("ERROR: unable to connect to MySQL: " . mysql_error());
+            return NULL;
+        }
+        mysql_select_db($db_database, $db_server);
+    }
 }
 
 function disconnect_db() {
@@ -235,6 +250,7 @@ function do_get($user, $request) {
     $result = mysql_query(sprintf("SELECT type, entity FROM resource WHERE rid='%s'",
                         mysql_real_escape_string($resource)));
     if (!$result) {
+        say('mysql_query failed: ' . mysql_error());
         return array('code' => 'failed', 'reason' => 'failed to get this resource');
     }
     
@@ -467,7 +483,10 @@ function connect($socket) {
     $user->socket = $socket;
     array_push($users, $user);
     array_push($sockets, $socket);
-    console($socket . " CONNECTED!");
+    $peername = "<undefined>";
+    $peerport = "<undefined>";
+    socket_getpeername($socket, $peername, $peerport);
+    console($socket . " CONNECTED from " . $peername . "!");
 }
 
 function disconnect($socket) {
@@ -497,8 +516,8 @@ function dohandshake($user, $buffer) {
     console($buffer);
     if (substr($buffer, 0, 22) == "<policy-file-request/>") {
         console("Responding with policy file request...");
-        $response = '<!DOCTYPE cross-domain-policy SYSTEM "http://www.macromedia.com/xml/dtds/cross-domain-policy.dtd">\n'
-            . '<cross-domain-policy><allow-access-from domain="*" to-ports="' . $port . '" secure="false"/></cross-domain-policy>';
+        $response = '<!DOCTYPE cross-domain-policy SYSTEM "http://www.macromedia.com/xml/dtds/cross-domain-policy.dtd">' . "\n"
+            . '<cross-domain-policy><allow-access-from domain="*" to-ports="' . $port . '"/></cross-domain-policy>';
         socket_write($user->socket, $response, strlen($response));
         $index = array_search($user->socket, $sockets);
         if ($index >= 0) {
