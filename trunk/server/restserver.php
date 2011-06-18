@@ -159,6 +159,8 @@ function process($user, $msg) {
         $response = do_delete($user, $request);
     } else if ($method == "SUBSCRIBE") {
         $response = do_subscribe($user, $request);
+    } else if ($method == "UNSUBSCRIBE") {
+        $response = do_unsubscribe($user, $request);
     } else if ($method == "NOTIFY") {
         $response = do_notify($user, $request);
     } else {
@@ -321,6 +323,19 @@ function do_subscribe($user, $request) {
                 mysql_real_escape_string($resource), $cid));
     if (!$result) {
         return array('code' => 'failed', 'reason' => 'failed to subscribe the client to the resource');
+    }
+    
+    return array('code' => 'success');
+}
+
+function do_unsubscribe($user, $request) {
+    $cid = mysql_real_escape_string($user->id);
+    $resource = $request['resource'];
+    
+    $result = mysql_command(sprintf("DELETE FROM subscribe (rid, cid) VALUES ('%s', '%s')",
+                mysql_real_escape_string($resource), $cid));
+    if (!$result) {
+        return array('code' => 'failed', 'reason' => 'failed to unsubscribe the client from the resource');
     }
     
     return array('code' => 'success');
