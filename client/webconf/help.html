@@ -1,5 +1,7 @@
 <html><body>
 
+<h1>Frequently Asked Questions</h1>
+
 <h3>What is this project about?</h3>
 This is a web conference application that allows you to do multiparty audio and video conferences and
 slide presentation. It uses Websocket for RESTful signaling with a backend server and Flash Player
@@ -16,9 +18,14 @@ http://code.google.com/p/vvowproject/</a>. Any feedback and support request can 
 the project owners.
 
 <h3>What is the minimum system requirements?</h3>
+It supports these browsers: Google Chrome, Safari, Firefox, Internet Explorer 8 or higher.
+You need good Internet connectivity to support multiparty audio and video communication.
+Finally, you need open and less restrictive NAT and firewall.
+<br/><br/>
 If you use the latest Google Chrome web browser, you should be fine. It requires Websocket,
-Javascript and Flash Player 10.3 or higher. You need good Internet connectivity to support
-multiparty audio and video communication.
+Javascript and Flash Player 10.3 or higher. In the absence of Websocket it falls back to use
+Flash Player for signaling, hence takes a few seconds to connect due to timeout of flash-policy file.
+For Flash Player 10.0-10.2, echo cancellation feature is disabled. 
 
 <h3>How do I create a conference?</h3>
 On the Main tab, under "Create New Web Conference" box, you can create a new conference
@@ -133,5 +140,24 @@ using the Flash Player plugin. The Flash application is used as an intermediate 
 until we build the media part of our project. We plan to build the media part using Google's
 open source WebRTC software.
 
+<h1>Screenshots</h1>
+
+<table width="100%">
+  <tr valign="top"><td width="50%">
+    Four party video conference screen on small resolution
+    <a target="_blank" href="screen1.png" title="click to open image in new window/tab"><img width="100%" src="screen1.png"/></a>
+  </td><td width="50%">
+    and on large resolution
+    <a target="_blank" href="screen3.png" title="click to open image in new window/tab"><img width="100%" src="screen3.png"/></a>
+  </td></tr>
+  <tr height="20px"></tr>
+  <tr valign="top"><td width="50%">
+    Slide presentation in a conference
+    <a target="_blank" href="screen4.png" title="click to open image in new window/tab"><img width="100%" src="screen4.png"/></a>
+  </td><td width="50%">
+    Preferences tab with network quality feeback
+    <a target="_blank" href="screen2.png" title="click to open image in new window/tab"><img width="100%" src="screen2.png"/></a>
+  </td></tr>
+</table>
 
 </body></html>

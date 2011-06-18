@@ -58,26 +58,47 @@ var room = {
     send_rx_quality_timer: null,
     send_rx_quality_interval: 10000,
     
+    // online user list
+    online_userlist: [],
+    
     //-------------------------------------------
     // METHODS invoked by restserver
     //-------------------------------------------
     
     on_open: function(data) {
+        room.get_online_userlist();
+        room.subscribe_online_userlist();
+        
         room.get_roomlist(function(rooms) {
-            rooms.sort(function(a, b) {return a.name < b.name ? -1 : (a.name > b.name ? 1 : 0);});
-            $("join_room").innerHTML = "";
-            for (var i=0; i<rooms.length; ++i) {
-                var r = rooms[i];
-                var child = document.createElement("option");
-                child.setAttribute("value", r.id);
-                child.appendChild(document.createTextNode(r.name));
-                $("join_room").appendChild(child);
+            if (rooms.length > 0) {
+                rooms.sort(function(a, b) {return a.name < b.name ? -1 : (a.name > b.name ? 1 : 0);});
+                $("join_room").innerHTML = "";
+                for (var i=0; i<rooms.length; ++i) {
+                    var r = rooms[i];
+                    var child = document.createElement("option");
+                    child.setAttribute("value", r.id);
+                    child.appendChild(document.createTextNode(r.name));
+                    $("join_room").appendChild(child);
+                }
             }
         });
         
         var user_name = get_query_param("name");
         var room_name = get_query_param("room");
         var user_password = get_query_param("password");
+        if (user_name) {
+            $("join_name").value = user_name;
+            $("create_name").value = user_name;
+            $("login_name").value = user_name;
+        }
+        if (room_name) {
+            $("create_room").value = room_name;
+        }
+        if (user_password) {
+            $("join_password").value = user_password;
+            $("create_password").value = user_password;
+            $("create_password2").value = user_password;
+        }
         if (user_name && room_name) {
             room.join(room_name, user_name, user_password || "");
         }
@@ -87,9 +108,13 @@ var room = {
         if (request.notify == "PUT" && request.resource == "/webconf/" + room.room_id) {
             room.set_preferences(request.entity);
         } else if (request.notify == "DELETE" && request.resource == "/webconf/" + room.room_id) {
-            room.delete_conference();
+            room.delete_conference("This conference is deleted");
         } else if (request.notify == "UPDATE" && request.resource == "/webconf/" + room.room_id + "/userlist") {
             room.on_userlist_update(request);
+        } else if (request.notify == "UPDATE" && request.resource == "/webconf-login") {
+            room.on_online_userlist_update(request);
+        } else if (request.notify == "NOTIFY" && request.resource.substr(0, 15) == "/webconf-login/") {
+            room.on_online_userlist_notify(request);
         } else if (request.notify == "UPDATE" && request.resource == "/webconf/" + room.room_id + "/chathistory") {
             room.on_chathistory_update(request);
         } else if (request.notify == "PUT" && request.resource == "/webconf/" + room.room_id + "/presentation") {
@@ -122,7 +147,14 @@ var room = {
         this.show_network_quality(null, false);
     },
     
-    create: function(room_name, user_name, user_password, verify_password) {
+    create: function() {
+        var room_name = sanitize($('create_room').value);
+        var user_name = sanitize($('create_name').value);
+        var user_password = sanitize($('create_password').value);
+        var verify_password = sanitize($('create_password2').value);
+        
+        this.main_error("");
+        
         var error = "";
         if (!room_name) 
             error += 'missing "Conference name".<br/>';
@@ -141,10 +173,13 @@ var room = {
         }
         
         var room_id = room_name.replace(/\W/g, '_');
+        this.on_creating();
+        
         restserver.send({"method": "GET", "resource": "/webconf/" + room_id},
             function(response) {
                 if (response.code == "success") {
                     room.main_error("This conference \"" + room_name + "\" already exists");
+                    room.on_join_failed();
                 } else {
                     room.preferences.name = room_name;
                     room.preferences.owner = user_name;
@@ -155,13 +190,28 @@ var room = {
                                 room.join(room_name, user_name, user_password);
                             } else if (response.code == "failed") {
                                 room.main_error("failed to create: " + response.reason);
+                                room.on_join_failed();
                             }
                         });
                 }
             });
     },
+
+    join_or_leave: function() {
+        if ($("join-button").value == "Join") {
+            var room_name = sanitize($('join_room').value);
+            var user_name = sanitize($('join_name').value);
+            var user_password = sanitize($('join_password').value);
+            
+            this.join(room_name, user_name, user_password);
+        } else if ($("join-button").value == "Leave") {
+            room.on_join_failed();
+            room.leave();
+        }
+    },
     
     join: function(room_name, user_name, user_password) {
+        this.main_error("");
         var error = "";
         if (!room_name) 
             error += 'missing "Conference name".<br/>';
@@ -172,15 +222,17 @@ var room = {
             this.main_error(error);
             return;
         }
-        
+    
         var room_id = room_name.replace(/\W/g, '_');
+        this.on_joining();
         restserver.send({"method": "GET", "resource": "/webconf/" + room_id},
             function(response) {
                 if (response.code == "success") {
                     if (user_password && response.entity.password != user_password) {
                         room.main_error("Invalid moderator password.");
+                        room.on_join_failed();
                     } else {
-                        room.logout();
+                        room.leave();
                         room.user_name = user_name;
                         room.room_id = room_id;
                         room.is_moderator = response.entity.password == null || (user_password && response.entity.password == user_password);
@@ -190,19 +242,139 @@ var room = {
                         }
                         room.set_preferences(response.entity);
                         room.on_select_tab("conference");
-                        room.login();
+                        room.on_joined();
                     }
                 } else if (response.code == "failed") {
                     room.main_error("This conference \"" + room_name + "\" does not exist");
+                    room.on_join_failed();
                 }
             });
     },
     
-    login_only: function(user_name) {
-        
+    login: function() {
+        var user_name = sanitize($('login_name').value);
+        this.main_error("");
+        var error = "";
+        if (!user_name)
+            error += 'missing "Your name".<br/>';
+        if (error) {
+            this.main_error(error);
+            return;
+        }
+            
+        var user_id = user_name.replace(/\W/g, '_');
+        if ($("login-button").value == "Login") {
+            $("login-button").value = "Wait";
+            $("login_name").disabled = true;
+            restserver.send({"method": "GET", "resource": "/webconf-login/" + user_id},
+                function(response) {
+                    if (response.code == "success") {
+                        room.main_error("This user name already exists");
+                        $("login-button").value = "Login";
+                        $("login_name").disabled = false;
+                    } else {
+                        restserver.send({"method": "PUT", "resource": "/webconf-login/" + user_id},
+                            function(response) {
+                                if (response.code == "failed") {
+                                    room.main_error("Cannot login with this user name: " + response.reason);
+                                    $("login-button").value = "Login";
+                                    $("login_name").disabled = false;
+                                } else {
+                                    $("login-button").value = "Logout";
+                                }
+                            });
+                        restserver.send({"method": "SUBSCRIBE", "resource": "/webconf-login/" + user_id});
+                    }
+                });
+        } else if ($("login-button").value == "Logout") {
+            restserver.send({"method": "UNSUBSCRIBE", "resource": "/webconf-login/" + user_id});
+            restserver.send({"method": "DELETE", "resource": "/webconf-login/" + user_id});
+            $("login-button").value = "Login";
+            $("login_name").disabled = false;
+        }
     },
     
-    login: function() {
+    invite: function() {
+        this.main_error("");
+        var error = "";
+        if (this.room_id == null)
+            error += 'please join or create a conference first.<br/>';
+        if (error) {
+            this.main_error(error);
+            return;
+        }
+        
+        var user_name = this.user_name;
+        var user_id = user_name.replace(/\W/g, '_');
+        var selected = [];
+        for (var i=0; i<this.online_userlist.length; ++i) {
+            var name = this.online_userlist[i];
+            var checkbox = $("online-user-cb-" + name);
+            if (checkbox && checkbox.checked) {
+                selected.push(name);
+                checkbox.checked = false;
+            }
+        }
+        
+        if (selected.length == 0) {
+            this.main_error("you did not select any online user");
+            return;
+        }
+        
+        error = "";
+        var remaining = selected.length;
+        for (var i=0; i<selected.length; ++i) {
+            var name = selected[i];
+            restserver.send({"method": "NOTIFY", "resource": "/webconf-login/" + name, "type": "application/json",
+                "data": {"invite": {"caller_name": user_name, "room_id": this.room_id, "room_name": this.room_id.replace(/_/g, " ")}}},
+                function(response) {
+                    if (response.code == "failed") {
+                        error += "failed to invite " + name + "<br/>";
+                    }
+                    remaining -= 1;
+                    if (remaining <= 0) {
+                        if (error) 
+                            room.main_error(error);
+                        else
+                            room.on_select_tab("conference");
+                    }
+                });
+        }
+    },
+    
+    on_creating: function() {
+        $("create_name").disabled = true;
+        $("create_room").disabled = true;
+        $("create_password").disabled = true;
+        $("create_password2").disabled = true;
+        $("create-button").disabled = true;
+    },
+    
+    on_joining: function() {
+        $("create_name").disabled = true;
+        $("create_room").disabled = true;
+        $("create_password").disabled = true;
+        $("create_password2").disabled = true;
+        $("create-button").disabled = true;
+        $("join_name").disabled = true;
+        $("join_room").disabled = true;
+        $("join_password").disabled = true;
+        $("join-button").value = "Leave";
+    },
+    
+    on_join_failed: function() {
+        $("create_name").disabled = false;
+        $("create_room").disabled = false;
+        $("create_password").disabled = false;
+        $("create_password2").disabled = false;
+        $("create-button").disabled = false;
+        $("join_name").disabled = false;
+        $("join_room").disabled = false;
+        $("join_password").disabled = false;
+        $("join-button").value = "Join";
+    },
+    
+    on_joined: function() {
         setTimeout("room.post_userlist()", 0);
         setTimeout("room.get_userlist()", 200);
         setTimeout("room.get_chathistory()", 300);
@@ -216,12 +388,13 @@ var room = {
         }
     },
     
-    logout: function() {
+    leave: function() {
       if (this.user_id != null) {
         restserver.send({"method": "DELETE", "resource": "/webconf/" + this.room_id + "/userlist/" + this.user_id});
         this.user_id = null;
         this.user_name = null;
       }
+      this.delete_conference();
       $("chat-history").innerHTML = "";
       this.set_preferences(this.get_default_preferences());
       
@@ -272,8 +445,10 @@ var room = {
                 "show_header": true, "show_footer": true, "video_controls": false};  
     },
     
-    delete_conference: function() {
-        this.error("This conference is deleted");
+    delete_conference: function(message) {
+        if (message) {
+            this.error(message);
+        }
         var old = this.userlist;
         this.userlist = [];
         for (var i=0; i<old.length; ++i) {
@@ -281,7 +456,7 @@ var room = {
             this.on_userlist_removed(user);
         }
     },
-    
+      
     set_preferences: function(data) {
         var old = this.preferences;
         this.preferences = data;
@@ -471,6 +646,70 @@ var room = {
                         }
                     }
                 });
+        }
+    },
+    
+    //-------------------------------------------
+    // METHODS online user list related
+    //-------------------------------------------
+    
+    subscribe_online_userlist: function() {
+        restserver.send({"method": "SUBSCRIBE", "resource": "/webconf-login"});
+    },
+    
+    get_online_userlist: function() {
+        restserver.send({"method": "GET", "resource": "/webconf-login"}, 
+            function(response) {
+                if (response.code == "success") {
+                  room.online_userlist = [];
+                  $("online-user-list").innerHTML = "";
+                  for (var i=0; i<response.entity.length; ++i) {
+                    room.add_online_user(response.entity[i]);
+                  }
+                }
+            });
+    },
+    
+    add_online_user: function(user_name) {
+        room.online_userlist.push(user_name);
+        $("online-user-list").append
+        var child = document.createElement("div");
+        child.id = "online-user-id-" + user_name;
+        var cb = document.createElement("input");
+        cb.id = "online-user-cb-" + user_name;
+        cb.type = "checkbox";
+        child.appendChild(cb);
+        child.appendChild(document.createTextNode(user_name.replace(/_/g, " ")));
+        $("online-user-list").appendChild(child);
+    },
+    
+    on_online_userlist_update: function(request) {
+        // got a new user list update
+        if (request.update) {
+            var user_name = request.update;
+            var obj = $("online-user-id-" + user_name);
+            if (!obj) {
+                this.add_online_user(user_name);
+            }
+        } else if (request['delete']) {
+            var obj = $("online-user-id-" + request['delete']);
+            if (obj) {
+                $("online-user-list").removeChild(obj);
+            }
+        }
+    },
+    
+    on_online_userlist_notify: function(request) {
+        if (request.data && request.data.invite) {
+            var invite = request.data.invite;
+            if (invite.room_id != this.room_id) {
+                var yes_no = confirm(sanitize(invite.caller_name) + " is inviting you to " + sanitize(invite.room_name)
+                                + ". Would you like to join?");
+                if (yes_no) {
+                    var user_name = $("login_name").value;
+                    this.join(invite.room_name, user_name, "");
+                }
+            }
         }
     },
     
@@ -682,8 +921,12 @@ var room = {
     },
     
     add_video: function(user_id) {
+        var id = "user-video-" + user_id;
+        if ($(id)) {
+            return; // already added
+        }
         var child = document.createElement("div");
-        child.id = "user-video-" + user_id;
+        child.id = id;
         child.style.width = "240px";
         child.style.height = "180px";
         child.style.minWidth = "215px";

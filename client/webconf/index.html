@@ -66,10 +66,8 @@ The main view has many tabs: main, conference, preferences, help.
         </td></tr><tr><td align="right">Moderator password:<br/>(optional)</td><td>
           <input type="password" id="join_password"/>
         </td></tr><tr><td colspan="2" align="center">
-          <input type="button" value="  Join  " class="button"
-				    onclick="room.join(sanitize($('join_room').value),
-																sanitize($('join_name').value),
-																sanitize($('join_password').value))"></input>
+          <input id="join-button" type="button" value="Join" class="button"
+				    onclick="room.join_or_leave()" title="join/leave a conference"></input>
         </td></tr>
       </table>
 	  </div>
@@ -86,36 +84,41 @@ The main view has many tabs: main, conference, preferences, help.
         </td></tr><tr><td align="right">Password again:</td><td>
           <input type="password" id="create_password2"/>
         </td></tr><tr><td colspan="2" align="center">
-          <input type="button" value="Create" class="button"
-				    onclick="room.create(sanitize($('create_room').value),
-																sanitize($('create_name').value),
-																sanitize($('create_password').value),
-																sanitize($('create_password2').value))"></input>
+          <input id="create-button" type="button" value="Create" class="button"
+				    onclick="room.create()" title="create a new conference and join it"></input>
         </td></tr>
       </table>
     </div>
 		
-		<!--
-    <div id="login-only-box" class="content-box">
-      <div class="content-header">Login to Receive Conference Invitation</div>
+    <div id="login-box" class="content-box">
+      <div class="content-header">Login to Receive Invite</div>
       <table>
-        <tr><td align="right">Your full name:</td><td>
-          <input type="text" id="login_name"/>
+        <tr><td align="right">Your name:</td><td>
+          <input type="text" id="login_name" style="width: 100px;"/>
         </td></tr><tr><td colspan="2" align="center">
           <input id="login-button" type="button" value="Login" class="button"
-				    onclick="room.login_only(sanitize($('login_name').value))"></input>
+				    onclick="room.login()" title="login/logout to receive invite"></input>
         </td></tr>
       </table>
-    </div>
-		-->
+	  </div>
+		
+    <div id="who-is-online-box" class="content-box">
+      <div class="content-header">Who is Online?</div>
+		  <div id="online-user-list"></div>
+			<div style="bottom: 4px; left: 0px; right: 0px; position: absolute; text-align: center;">
+				 Select and send
+        <input id="invitebutton" type="button" value="Invite" class="button"
+				  onclick="room.invite()" title="invite more people after your have joined a conference"></input>
+			</div>
+		</div>
 		
 		<div id="min-requirements">
 				<h3>Minimum Requirements</h3>
 				(met by Google Chrome web browser).
 				<ol>
-          <li>WebSocket support</li>
-          <li>Javascript support</li>
-          <li>Flash Player version 10.3 or later.</li>
+          <li>Lastest <a href="http://get.adobe.com/flashplayer/" style="text-decoration: none; color: #000000;">Flash Player</a> plugin</li>
+          <li>Good Internet connectivity</li>
+					<li>Open and less restrictive NAT/firewall</li>
 				</ol>
 				
 				<div id="main_error" style="color: #800000;"></div>
