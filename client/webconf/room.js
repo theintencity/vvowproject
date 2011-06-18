@@ -297,7 +297,7 @@ var room = {
     invite: function() {
         this.main_error("");
         var error = "";
-        if (this.room_id == null)
+        if (this.room_id == null || this.user_name == null)
             error += 'please join or create a conference first.<br/>';
         if (error) {
             this.main_error(error);
