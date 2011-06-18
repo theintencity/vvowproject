@@ -192,16 +192,30 @@ div#create-conf-box {
   width: 310px;
   /* border: 1px solid #a0a0a0;*/
 }
-div#login-only-box {
+div#login-box {
   position: absolute;
   top: 20px;
   left: 350px;
   height: 80px;
-  width: 270px;
+  width: 210px;
+}
+div#who-is-online-box {
+  position: absolute;
+  top: 120px;
+  left: 350px;
+  height: 240px;
+  width: 210px;
+}
+div#online-user-list {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 10px;
+  padding-right: 10px;
+  overflow: auto;
 }
 div#min-requirements {
   position: absolute;
-  left: 350px;
+  left: 580px;
   top: 10px;
 }
 div#chat-history {
