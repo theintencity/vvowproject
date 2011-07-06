@@ -1,0 +1,54 @@
+#!/bin/sh
+#
+# chkconfig: 2345 95 20
+# description: vvow script for start and stop
+# processname: vvowd
+
+##PATH=/bin:/usr/bin:/sbin:/usr/sbin:/root
+
+# source function library
+. /etc/rc.d/init.d/functions
+
+start()
+{
+cd /root/vvowproject-read-only/server && php restserver.php >restserver2.log 2>&1 &
+}
+
+stop()
+{
+killall php
+RETVAL=$?
+}
+
+restart() {
+	stop
+	start
+}
+
+
+# See how we were called.
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  status)
+    status vvowd
+    ;;
+  restart)
+    restart
+    ;;
+  condrestart)
+    condrestart
+    ;;
+  *)
+    echo $"Usage: $0 {start|stop|status|condrestart|restart}"
+    exit 1
+esac
+
+exit $RETVAL
+
+
+
