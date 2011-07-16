@@ -6,7 +6,7 @@ is deleted when the client with that id is disconnected. This allows the client
 to create transient or persistent resources.
 */
 
-drop table resource;
+drop table if exists resource;
 create table resource (
     rid varchar(512) PRIMARY KEY NOT NULL DEFAULT '',
     prid varchar(512) NOT NULL DEFAULT '',
@@ -26,7 +26,7 @@ e.g., /a/e. To avoid overloading the server subscribe to very specific resource
 instead of general ones.
 */
 
-drop table subscribe;
+drop table if exists subscribe;
 create table subscribe (
     rid varchar(512) NOT NULL DEFAULT '',
     cid varchar(25) NOT NULL DEFAULT '',
