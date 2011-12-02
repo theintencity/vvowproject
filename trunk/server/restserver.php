@@ -1,6 +1,5 @@
 #!/php -q
 <?php
-/*  > php -q server.php  */
 
 //-----------------------------------------------
 // Configurations
@@ -19,7 +18,7 @@ $debug = true;
 $db_hostname = '127.0.0.1';
 $db_database = 'restserver';
 $db_username = 'root';
-$db_password = 'mypassword';
+$db_password = 'sip911';
 
 //-----------------------------------------------
 // Main: connect database, start websocket server
@@ -103,31 +102,75 @@ function disconnect_db() {
 // Our websocket data processing
 //-----------------------------------------------
 
-$pending_msg = "";
-
 function process_multiple($user, $msg) {
-    global $pending_msg;
-    
-    $pending_msg = $pending_msg . $msg;
-    if ($pending_msg[strlen($pending_msg)-1] != chr(255)) {
-        say("ERROR: incomplete message.");
-        return;
+    if ($user->version) {
+        $user->pending_msg = $user->pending_msg . $msg;
+        while ($user->pending_msg) {
+            $m = $user->pending_msg;
+            $opcode = ord($m[0]) & 0x0f;
+            $len = ord($m[1]) & 0x7f;
+            # TODO: ignore the has-mask field and assume it to be 1.
+            #say('opcode ' . $opcode . ' len ' . $len . ' raw ' . bin2hex($m));
+            if ($opcode != 0x01) {
+                say('ERROR: only text opcode is supported');
+                return;
+            }
+            if ($len === 126) {
+                $l1 = unpack('n', substr($m,2,2));
+                $len = $l1[1];
+                $masks = substr($m, 4, 4);
+                $offset = 8;
+            }
+            else if ($len === 127) {
+                $l1 = unpack('N', substr($m,2,4));
+                $l2 = unpack('N', substr($m,6,4));
+                $len = $l1[1] * pow(2, 32) + $l2[1];
+                $masks = substr($m, 10, 4);
+                $offset = 14;
+            }
+            else {
+                $masks = substr($m, 2, 4);
+                $offset = 6;
+            }
+            say('offset '. $offset . ' len '. $len);
+            if (strlen($m) < $offset+$len) { # not enough data yet
+                say('ERROR: incomplete message.');
+                return;
+            }
+            $decoded = "";
+            $data = substr($m, $offset, $len);
+            $user->pending_msg = substr($m, $offset+$len);
+            
+            for ($index = 0; $index < strlen($data); $index++) {
+                $decoded .= $data[$index] ^ $masks[$index % 4];
+            }
+            #say('decoded '. $opcode . ' ' . $decoded . ' raw ' . $data . ' offset ' . $offset . ' len ' . $len);
+            if ($decoded) {
+                process($user, $decoded);
+            }
+        }
     }
-    
-    $msg = $pending_msg;
-    $pending_msg = "";
-    
-    $first = 0;
-    $last = 0;
-    while ($last < (strlen($msg))) {
-        $first = strpos($msg, chr(0), $last);
-        $last = strpos($msg, chr(255), $first) + 1;
-        process($user, substr($msg, $first, $last-$first));
+    else {
+        $user->pending_msg = $user->pending_msg . $msg;
+        if ($user->pending_msg[strlen($user->pending_msg)-1] != chr(255)) {
+            say("ERROR: incomplete message.");
+            return;
+        }
+        
+        $msg = $user->pending_msg;
+        $user->pending_msg = "";
+        
+        $first = 0;
+        $last = 0;
+        while ($last < (strlen($msg))) {
+            $first = strpos($msg, chr(0), $last);
+            $last = strpos($msg, chr(255), $first) + 1;
+            process($user, unwrap(substr($msg, $first, $last-$first)));
+        }
     }
 }
 
-function process($user, $msg) {
-    $action = unwrap($msg);
+function process($user, $action) {
     say("< " . $action);
 
     $request = json_decode($action, true);
@@ -170,7 +213,7 @@ function process($user, $msg) {
 
     $response['msg_id'] = $request['msg_id'];
     //header("Content-type: application/json");
-    send($user->socket, json_encode($response));
+    send($user, json_encode($response));
 }
 
 
@@ -388,7 +431,7 @@ function do_notify($user, $request, $method = NULL) {
         if ($target == null) {
             say("invalid user for " . $row[0]);
         } else {
-            send($target->socket, $param);
+            send($target, $param);
             ++$sent_count;
         }
     }
@@ -421,7 +464,7 @@ function do_notify($user, $request, $method = NULL) {
             if ($target == null) {
                 say("invalid user for " . $row[0]);
             } else {
-                send($target->socket, $param);
+                send($target, $param);
                 ++$sent_count;
             }
             ++$sent_count;
@@ -496,6 +539,8 @@ function connect($socket) {
     $user = new User();
     $user->id = uniqid();
     $user->socket = $socket;
+    $user->version = null;
+    $user->pending_msg = "";
     array_push($users, $user);
     array_push($sockets, $socket);
     $peername = "<undefined>";
@@ -542,44 +587,57 @@ function dohandshake($user, $buffer) {
         return false;
     }
     
-    list($resource, $host, $origin, $strkey1, $strkey2, $data) = getheaders($buffer);
+    list($resource, $host, $origin, $version, $strkey, $strkey1, $strkey2, $data) = getheaders($buffer);
     console("Handshaking...");
-
-    $pattern = '/[^\d]*/';
-    $replacement = '';
-    $numkey1 = preg_replace($pattern, $replacement, $strkey1);
-    $numkey2 = preg_replace($pattern, $replacement, $strkey2);
-
-    $pattern = '/[^ ]*/';
-    $replacement = '';
-    $spaces1 = strlen(preg_replace($pattern, $replacement, $strkey1));
-    $spaces2 = strlen(preg_replace($pattern, $replacement, $strkey2));
-
-    if ($spaces1 == 0 || $spaces2 == 0 || fmod($numkey1, $spaces1) != 0 || fmod($numkey2, $spaces2) != 0) {
-        $index = array_search($user->socket, $sockets);
-        if ($index >= 0) {
-            array_splice($sockets, $index, 1);
-        }
-        socket_close($user->socket);
-        console('failed');
-        return false;
+    
+    $user->version = $version && intval($version);
+    if ($version && intval($version) >= 8) {
+        $accept = base64_encode(sha1($strkey . "258EAFA5-E914-47DA-95CA-C5AB0DC85B11", true));
+        $upgrade = "HTTP/1.1 101 Switching Protocols\r\n" .
+                "Upgrade: WebSocket\r\n" .
+                "Connection: Upgrade\r\n" .
+                "Sec-WebSocket-Accept: " . $accept . "\r\n" .
+                "\r\n";
+        socket_write($user->socket, $upgrade, strlen($upgrade));
     }
-
-    $ctx = hash_init('md5');
-    hash_update($ctx, pack("N", $numkey1 / $spaces1));
-    hash_update($ctx, pack("N", $numkey2 / $spaces2));
-    hash_update($ctx, $data);
-    $hash_data = hash_final($ctx, true);
-
-    $upgrade = "HTTP/1.1 101 WebSocket Protocol Handshake\r\n" .
-            "Upgrade: WebSocket\r\n" .
-            "Connection: Upgrade\r\n" .
-            "Sec-WebSocket-Origin: " . $origin . "\r\n" .
-            "Sec-WebSocket-Location: ws://" . $host . $resource . "\r\n" .
-            "\r\n" .
-            $hash_data;
-
-    socket_write($user->socket, $upgrade . chr(0), strlen($upgrade . chr(0)));
+    else {
+        $pattern = '/[^\d]*/';
+        $replacement = '';
+        $numkey1 = preg_replace($pattern, $replacement, $strkey1);
+        $numkey2 = preg_replace($pattern, $replacement, $strkey2);
+    
+        $pattern = '/[^ ]*/';
+        $replacement = '';
+        $spaces1 = strlen(preg_replace($pattern, $replacement, $strkey1));
+        $spaces2 = strlen(preg_replace($pattern, $replacement, $strkey2));
+    
+        if ($spaces1 == 0 || $spaces2 == 0 || fmod($numkey1, $spaces1) != 0 || fmod($numkey2, $spaces2) != 0) {
+            $index = array_search($user->socket, $sockets);
+            if ($index >= 0) {
+                array_splice($sockets, $index, 1);
+            }
+            socket_close($user->socket);
+            console('failed');
+            return false;
+        }
+    
+        $ctx = hash_init('md5');
+        hash_update($ctx, pack("N", $numkey1 / $spaces1));
+        hash_update($ctx, pack("N", $numkey2 / $spaces2));
+        hash_update($ctx, $data);
+        $hash_data = hash_final($ctx, true);
+    
+        $upgrade = "HTTP/1.1 101 WebSocket Protocol Handshake\r\n" .
+                "Upgrade: WebSocket\r\n" .
+                "Connection: Upgrade\r\n" .
+                "Sec-WebSocket-Origin: " . $origin . "\r\n" .
+                "Sec-WebSocket-Location: ws://" . $host . $resource . "\r\n" .
+                "\r\n" .
+                $hash_data;
+    
+        socket_write($user->socket, $upgrade . chr(0), strlen($upgrade . chr(0)));
+    }
+    
     $user->handshake = true;
     console($upgrade);
     console("Done handshaking...");
@@ -587,7 +645,7 @@ function dohandshake($user, $buffer) {
 }
 
 function getheaders($req) {
-    $r = $h = $o = null;
+    $r = $h = $o = $key1 = $key2 = $data = $v = $key = null;
     if (preg_match("/GET (.*) HTTP/", $req, $match)) {
         $r = $match[1];
     }
@@ -603,10 +661,16 @@ function getheaders($req) {
     if (preg_match("/Sec-WebSocket-Key1: (.*)\r\n/", $req, $match)) {
         $key1 = $match[1];
     }
+    if (preg_match("/Sec-WebSocket-Version: (.*)\r\n/", $req, $match)) {
+        $v = $match[1];
+    }
+    if (preg_match("/Sec-WebSocket-Key: (.*)\r\n/", $req, $match)) {
+        $key = $match[1];
+    }
     if (preg_match("/\r\n(.*?)\$/", $req, $match)) {
         $data = $match[1];
     }
-    return array($r, $h, $o, $key1, $key2, $data);
+    return array($r, $h, $o, $v, $key, $key1, $key2, $data);
 }
 
 function getuserbysocket($socket) {
@@ -633,10 +697,25 @@ function getuserbyid($wsid) {
     return $found;
 }
 
-function send($client, $msg) {
-    say(">".$msg);
-    $msg = wrap($msg);
-    socket_write($client, $msg, strlen($msg));
+function send($user, $msg) {
+    say("> ".$msg);
+    if ($user->version) {
+        if (strlen($msg) < 126) {
+            $init = chr(0x81) . chr(strlen($msg));
+        }
+        else if (strlen($msg) < 65536) {
+            $init = chr(0x81) . chr(126) . pack('n', strlen($msg));
+        }
+        else {
+            say('ERROR: cannot send a long message');
+            return;
+        }
+        $msg = $init . $msg;
+    }
+    else {
+        $msg = wrap($msg);
+    }
+    socket_write($user->socket, $msg, strlen($msg));
 }
 
 function say($msg="") {
@@ -663,5 +742,7 @@ class User {
     var $id;
     var $socket;
     var $handshake;
+    var $version;
+    var $pending_msg;
 }
 ?>
