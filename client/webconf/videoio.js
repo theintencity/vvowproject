@@ -31,7 +31,8 @@ function onPropertyChange(event) {
 
 var hasVersion10 = DetectFlashVer(10, 0, 0);
 var hasVersion10_3 = DetectFlashVer(10, 3, 0);
-var VideoIO = (hasVersion10_3 ? "VideoIO45.swf" : (hasVersion10 ? "VideoIO.swf" : null));
+var hasVersion11 = DetectFlashVer(11, 0, 0);
+var VideoIO = (hasVersion11 ? "VideoIO11.swf" : (hasVersion10_3 ? "VideoIO45.swf" : (hasVersion10 ? "VideoIO.swf" : null)));
 
 function getVideoIO(id, flashVars, width, height, bgcolor, wmode) {
     if (width == undefined)
@@ -44,6 +45,9 @@ function getVideoIO(id, flashVars, width, height, bgcolor, wmode) {
         bgcolor = '#000000';
     if (wmode == undefined)
         wmode = 'window';
+    if (hasVersion11) 
+        flashVars = (flashVars ? (flashVars + '&') : '') + 'videoCodec=H264Avc';
+
     return '<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"\
     id="' + id + '" width="' + width + '" height="' + height + '"\
     codebase="http://fpdownload.macromedia.com/get/flashplayer/current/swflash.cab">\
