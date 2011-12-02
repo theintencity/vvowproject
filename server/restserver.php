@@ -18,7 +18,7 @@ $debug = true;
 $db_hostname = '127.0.0.1';
 $db_database = 'restserver';
 $db_username = 'root';
-$db_password = 'sip911';
+$db_password = 'mypassword';
 
 //-----------------------------------------------
 // Main: connect database, start websocket server
