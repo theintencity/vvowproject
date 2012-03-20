@@ -15,6 +15,7 @@
     <script type="text/javascript" src="AC_OETags.js" language="javascript"></script>
     <!--script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script-->
     <script type="text/javascript" src="json.js"></script>
+    <script type="text/javascript" src="base64.js"></script>
     <script type="text/javascript" src="common.js"></script>
     <script type="text/javascript" src="restserver.js"></script>
     <script type="text/javascript" src="room.js"></script>
@@ -37,9 +38,7 @@ The header displays the banner.
   <div class="has-gradient"><span class="heading">
 	<img src="iit-icon.png" width="16px" height="16px"></img> IIT Web Conference</span></div>
 	<span class="footer">
-  For demonstration at
-	<a href="http://www.cvent.com/events/7th-annual-real-time-communications-conference-and-expo/event-summary-ffc3acffa5af4bddae7a33f788e37f56.aspx">
-	7th Annual Real-Time Communications Conference and Expo</a>, Oct 4-6, 2011, Chicago Area</span>
+  A demonstration of Flash Player and WebRTC technologies for web-based audio and video conferencing and sharing</span>
 </div>
 
 <!--
@@ -116,7 +115,8 @@ The main view has many tabs: main, conference, preferences, help.
 				<h3>Minimum Requirements</h3>
 				(met by Google Chrome web browser).
 				<ol>
-          <li>Lastest <a href="http://get.adobe.com/flashplayer/" style="text-decoration: none; color: #000000;">Flash Player</a> plugin</li>
+          <li>Lastest <a href="http://get.adobe.com/flashplayer/" style="text-decoration: none; color: #000000;">Flash Player</a> plugin
+					<br/>or, <a href="http://www.webrtc.org/running-the-demos" style="text-decoration: none; color: #000000;">Google Canary</a> with WebRTC support</li>
           <li>Good Internet connectivity</li>
 					<li>Open and less restrictive NAT/firewall</li>
 				</ol>
@@ -227,9 +227,15 @@ The main view has many tabs: main, conference, preferences, help.
         </td></tr><tr><td align="right">Show footer banner at bottom:</td><td>
           <input type="checkbox" id="change_show_footer" checked
 						title="Display the bottom project resources box"/>
+        </td></tr><tr><td align="right"><b>(new)</b> Enable WebRTC when available:</td><td>
+          <input type="checkbox" id="change_enable_webrtc" checked
+						title="Enable WebRTC extension if available in the browser"/>
+        </td></tr><tr><td align="right"><b>(new)</b> Enable Flash Player when available:</td><td>
+          <input type="checkbox" id="change_enable_flashplayer" checked
+						title="Enable Flash Player plugin if available in the browser"/>
         </td></tr><tr><td colspan="2" align="center">
           <input id="save-conference-settings" type="button" value="Save" class="button"
-				    onclick="room.change_conference_settings($('change_persistent').checked,$('change_video_auto').checked,$('change_allow_html').checked,$('change_show_header').checked,$('change_show_footer').checked,$('change_video_controls').checked)"></input>
+				    onclick="room.change_conference_settings($('change_persistent').checked,$('change_video_auto').checked,$('change_allow_html').checked,$('change_show_header').checked,$('change_show_footer').checked,$('change_video_controls').checked,$('change_enable_webrtc').checked,$('change_enable_flashplayer').checked)"></input>
         </td></tr>
       </table>
     </div>
@@ -238,13 +244,19 @@ The main view has many tabs: main, conference, preferences, help.
 		
     <div class="content-box" style="width: 330px; position: absolute; left: 360px; top: 10px;">
       <div class="content-header">Media and Device Settings</div>
-			<script type="text/javascript">
+      <script type="text/javascript">
+        if (typeof navigator.webkitGetUserMedia != "undefined") {
+          document.write("You have WebRTC enabled<br/>");
+        } else {
+          document.write("You have WebRTC disabled<br/>");
+        }
+				
         var hasRequiredVersion = DetectFlashVer(10, 3, 0);
-				if (hasRequiredVersion) {
-				  document.write("You have Flash Player 10.3 or later");
-				} else {
-				  document.write("You DO NOT have Flash Player 10.3. <a href='http://get.adobe.com/flashplayer/'>Go get Flash</a>.");
-				}
+        if (hasRequiredVersion) {
+          document.write("You have Flash Player 10.3 or later");
+        } else {
+          document.write("You DO NOT have Flash Player 10.3. <a href='http://get.adobe.com/flashplayer/'>Go get Flash</a>.");
+        }
 			</script>
 			<br/>
 			Please click on "Allow" and "Remember" below.<br/>
@@ -370,8 +382,8 @@ The footer area displays copyright information and links to project resources.
 <div id="div-footer" class="has-shadow">
   <div class="has-gradient">
     <span class="heading">Links to Project Resources</span>
-    <span class="copyright">&copy; 2010-2011, 
-      <a href="http://kundansingh.com">Kundan Singh</a>, All Rights Reserved.</span>
+    <span class="copyright">&copy; 2010-2011 <a href="http://kundansingh.com">Kundan Singh</a>,
+			&copy; 2011-2012 <a href="http://theintencity.com">Intencity Cloud Technologies</a>, All Rights Reserved.</span>
   </div>
   <span class="footer">
     <a href="https://sites.google.com/site/vvowproject" target="_blank">Voice and Video on Web,</a>
