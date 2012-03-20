@@ -1,0 +1,123 @@
+#header {
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    height: 21px;
+    border: 0px;
+    border-bottom: 1px solid grey;
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 2px;
+    padding-bottom: 0px;
+    background-color: lightgrey;
+    overflow: hidden;
+}
+#title {
+    float: left;
+}
+#menubar {
+    float: right;
+    margin: 0;
+    padding: 0;
+}
+#menubar li {
+    display: inline;
+    list-style-type: none;
+    padding-right: 4px;
+    padding-left: 4px;
+/*    border-left: 1px solid grey; */
+}
+#menubar li a {
+    text-decoration: none;
+}
+#slides {
+    position: absolute;
+    left: 2px;
+    right: 246px;
+    top: 26px;
+    bottom: 2px;
+    min-width: 165px;
+    border: 1px solid grey;
+    background-color: #efefef;
+    background: -webkit-gradient(linear, left top, left bottom, from(#efefef), to(#808080));
+    overflow: hidden;
+}
+#presenter_video {
+    position: absolute;
+    width: 240px;
+    right: 2px;
+    top: 26px;
+    height: 180px;
+    border: 1px solid grey;
+    overflow: hidden;
+    background-color: #000000;
+}
+#viewer_video {
+    position: absolute;
+    width: 240px;
+    right: 246px;
+    top: 26px;
+    height: 180px;
+    border: none;
+    overflow: hidden;
+    visibility: hidden;
+    z-index: 1000;
+}
+#chathistory {
+    position: absolute;
+    width: 236px;
+    right: 2px;
+    top: 234px;
+    bottom: 2px;
+    border: 1px solid grey;
+    background-color: #efefef;
+    background: -webkit-gradient(linear, left top, left bottom, from(#efefef), to(#808080));
+    overflow: auto;
+    padding: 2px;
+    font-size: 14px;
+}
+#chatinputbox {
+    position: absolute;
+    width: 240px;
+    right: 2px;
+    top: 210px;
+    height: 20px;
+    border: 1px solid grey;
+    overflow: hidden;
+}
+#chatinputbox input {
+    position: absolute;
+    width: 236px;
+    top:210px;
+    right: 2px;
+    height: 20px;
+    border: 0;
+}
+#bottombar {
+    position: absolute;
+    bottom: 2px;
+    right: 246px;
+    z-index: 1000;
+    width: 61px;
+    height: 21px;
+    padding: 0px;
+    margin: 0px;
+    visibility: hidden;
+}
+#bottombar button {
+    background-color: #ffffff;
+    height: 20px;
+    width: 30px;
+    padding: 0px;
+    cursor: pointer;
+}
+div.mouse {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: 2px solid green;
+    background-color: #ff0000; 
+    z-index: 2000;
+}
+

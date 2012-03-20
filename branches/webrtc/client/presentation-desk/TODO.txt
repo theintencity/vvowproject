@@ -1,0 +1,9 @@
++ create menu options
++ create views based on current state: idle, presenter, viewer, active_audience
+- show user list for presenter. has control for audio/video/raised hand
+- enable hidden audio playback mode VideoIO for participants.
+- update name change in user list.
+- update title based on the slideshare title
+- upload list of files from local disk to do file share.
+- don't enable any UI while it is connecting...
+- 

@@ -1,0 +1,163 @@
+<html><body>
+
+<h1>Frequently Asked Questions</h1>
+
+<h3>What is this project about?</h3>
+This is a web conference application that allows you to do multiparty audio and video conferences and
+slide presentation. It uses Websocket for RESTful signaling with a backend server and Flash Player
+for audio and video communication. The software architecture is based on the
+<a href="https://sites.google.com/site/vvowproject">Voice and Video on Web</a> project at IIT
+Chicago. Please see the project web site for details of design, implementation and contributers.
+The Flash based audio and video communication is used from the <a href="http://code.google.com/p/flash-videoio">Flash
+VideoIO</a> project.
+
+<h3>Is this web conferencing application free?</h3>
+Yes. The application is free to use, and the project source code is available as GPL open
+source license. You can download the source code from <a href="http://code.google.com/p/vvowproject/">
+http://code.google.com/p/vvowproject/</a>. Any feedback and support request can be sent to
+the project owners.
+
+<h3>What is the minimum system requirements?</h3>
+It supports these browsers: Google Chrome, Safari, Firefox, Internet Explorer 8 or higher.
+You need good Internet connectivity to support multiparty audio and video communication.
+Finally, you need open and less restrictive NAT and firewall.
+<br/><br/>
+If you use the latest Google Chrome web browser, you should be fine. It requires Websocket,
+Javascript and Flash Player 10.3 or higher. In the absence of Websocket it falls back to use
+Flash Player for signaling, hence takes a few seconds to connect due to timeout of flash-policy file.
+For Flash Player 10.0-10.2, echo cancellation feature is disabled. 
+
+<h3>How do I create a conference?</h3>
+On the Main tab, under "Create New Web Conference" box, you can create a new conference
+by specifying your name, the conference name, and your moderator password. Then you send an
+email to your participants giving the link to this web
+application, and the name of your conference. You automatically join a newly created
+conference.
+
+<h3>How do I join an existing conference?</h3>
+On the Main tab, under "Join Existing Web Conference" box, you can select an existing
+conference from the list and specifyying your name to join the conference. If you know the
+moderator password, you can join as a moderator by enterting the moderator password.
+If you create a new conference, you automatically become the moderator of that
+conference.
+
+<h3>How do I moderate my conference?</h3>
+If you created a new conference or joined an existing conference with a moderator password,
+you can control whose video stream is published and what slide presentation is shown
+in your conference. On the Video Conference tab, a moderator can check the checkbox for
+individual participants to enable his or her audio and video stream. Other participants
+can not control the check box but can see the state of the check box.
+
+<h3>How do I share slides presentation?</h3>
+As a moderator, you can share slides in this Web Conference with from slideshare.net web site
+only. Just copy the slideshare URL of your slides first. Then on the Video Conference tab,
+click on the document icon <img src="document_icon_16x16.png"></img> near the participants
+list. Then paste the URL of your slides. It takes some time for the URL to be fetched for
+individual slides list so be patient before the first slides show up. As a moderator,
+you see the next and previous buttons on the bottom right corner of the slides, and a
+close button on the top right corner. Other participants see the current slides as well as
+the moderator's mouse position in the slide.
+
+<h3>What is raising an hand?</h3>
+As a participant, a user can click on the hand icon <img src="hand_icon_16x16.png"></img> to
+raise hand. The moderator as well as other participants see who has raised hand, and
+the moderator may enable the video stream of the participant raising hand. This feature is
+implemented mostly for one to many presentation where normally participant video stream
+is not shown. Clicking on the hand icon again unraises your hand.
+
+<h3>How do I do text chat?</h3>
+Text chat is like any other text chat application where any participant can type a message and
+press the "enter" key to send the message in the Text Chat box of the Video Conference tab.
+Every participant sees the message in the conference. If multiple messages are sent successively
+by the same participant, they appear under one name in the chat history box. The
+chat history box also displays events such as when a user joins or leaves.
+
+<h3>How do I clear the chat history?</h3>
+On the Video Conference tab, under the Text Chat box, you can click on the close icon <img
+src="close_icon_16x16.png"></img> to clear your chat history box. As a moderator, if you
+click on this button, you also clear the persistent chat history if any, whereas as a
+participant you just clear your local view.
+
+<h3>What is a persistent conference?</h3>
+By default a new conference is temporary, and disappears when the moderator leaves the
+conference page. As a moderator, you can change your conference to be persistent in the
+Preferences tab under the Conference Settings. A persistent conference stores all the
+text chat history from the moment it becomes persistent. The moderator can clear the
+chat history as mentioned above.
+
+<h3>What are the conference settings?</h3>
+As a moderator, you can change the default conference settings in the Preferences tab under
+the Conference Settings box.<ul>
+<li>The persistent property is described above.</li>
+<li>The auto-start new
+participant's video property causes automatic start of video stream of a new participant, and is
+typically useful for multi-party conference without presentation.</li>
+<li>The show per participant
+video controls property causes display of video control bar below each participant video. The
+video control bar allows you to control your microphone mute, volume, camera on/off, as well
+as local display of other participants speaker on/off, speaker volume. It also allows you to
+go full screen for individual participant video.</li>
+<li>The allow HTML in text chat property enables HTML tags in the text chat so that you can
+enter any pre-formated chat messages, e.g., to change color, font, size, etc. Without this
+property, it identifies clickable URLs in the text chat, but no other HTML tags.</li>
+<li>The show header/footer banner property shows or hides the top and bottom banners in the
+conference page. Hiding the banner is useful for full screen presentations.</li>
+</ul>
+
+<h3>How do I change the moderator password?</h3>
+Any participant can change the moderator password if he or she knows the existing moderator
+password on the Video Conference tab under the Change Moderator Password box. Currently there is
+no recover password feature. Since creating a new conference is cheap, you can always discard
+your previous conference and create a new one. Please send an email to the owners if you
+would like to remove your persistent conference permanently.
+
+<h3>How do I change the device settings?</h3>
+If the moderator has enabled the show per participant video controls property, you can change
+some settings from within your video box. Otherwise on the Preferences tab under Media and
+Device Settings you can see the Flash Player settings box. You do not need to click on "close"
+in that box. You can explore other settings by clicking on microphone or camera icon in that
+box. The Flash Player settings allows you to select the camera or microphone, as well as
+set the microphone volume.
+
+<h3>Does it implement echo cancellation?</h3>
+With Flash Player 10.3 or later, the application will automatically enable echo cancellation.
+In a multiparty conference, even if one participant does not have echo cancellation enabled,
+all other participants will hear echo of their own voice. If two participants do not have
+echo cancellation enabled, then it will cause the annoying audio feedback loop. The moderator
+can control the video stream of these participants, or enable the show per participant video
+controls property so that those participants can disable their microphone if they are not
+speaking.
+
+<h3>How is this project related to Web RTC?</h3>
+The Web RTC effort allows you to have audio and video communication from within the browser
+without using any external plugin application. In that regard, this project can be treated as
+complementary to Web RTC because it provides Websocket based signaling support for a
+multiparty video conferencing and presentation. The details of the signaling is described
+on our <a href="https://sites.google.com/site/vvowproject">VVoW project</a>
+web site. On the other hand, our VVoW project aims at using an external
+host resident application to enable real-time audio and video in the long term, instead of
+using the Flash Player plugin. The Flash application is used as an intermediate solution
+until we build the media part of our project. We plan to build the media part using Google's
+open source WebRTC software.
+
+<h1>Screenshots</h1>
+
+<table width="100%">
+  <tr valign="top"><td width="50%">
+    Four party video conference screen on small resolution
+    <a target="_blank" href="screen1.png" title="click to open image in new window/tab"><img width="100%" src="screen1-small.png"/></a>
+  </td><td width="50%">
+    and on large resolution
+    <a target="_blank" href="screen3.png" title="click to open image in new window/tab"><img width="100%" src="screen3-small.png"/></a>
+  </td></tr>
+  <tr height="20px"></tr>
+  <tr valign="top"><td width="50%">
+    Slide presentation in a conference
+    <a target="_blank" href="screen4.png" title="click to open image in new window/tab"><img width="100%" src="screen4-small.png"/></a>
+  </td><td width="50%">
+    Preferences tab with network quality feeback
+    <a target="_blank" href="screen2.png" title="click to open image in new window/tab"><img width="100%" src="screen2-small.png"/></a>
+  </td></tr>
+</table>
+
+</body></html>
