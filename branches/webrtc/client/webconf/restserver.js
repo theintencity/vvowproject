@@ -70,7 +70,7 @@ var restserver = {
                 var data = msg.data.replace(/\\\//g, '/');
                 if (data.charAt(0) == '\u0000')
                     data = data.substring(1);
-                log("received: " + data);
+                log("received: " + (data && data.length > 100 ? data.substr(0, 97) + "..." : data));
                 restserver.received(data);
             };
             this.socket.onclose   = function(msg){
@@ -119,7 +119,7 @@ var restserver = {
 
         try {
             var value = JSON.stringify(request);
-            log('Sending: ' + value);
+            log('Sending: ' + (value && value.length > 100 ? value.substr(0, 97) + '...' : value));
             this.socket.send(value);
         } catch (ex) {
             console.log(ex);
