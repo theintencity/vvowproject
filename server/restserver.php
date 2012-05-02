@@ -16,9 +16,9 @@ $users = array();
 $debug = true;
 
 $db_hostname = '127.0.0.1';
-$db_database = 'restserver';
-$db_username = 'root';
-$db_password = 'mypassword';
+$db_database = 'webconf';
+$db_username = 'user';
+$db_password = 'pass';
 
 //-----------------------------------------------
 // Main: connect database, start websocket server
@@ -32,7 +32,9 @@ if (!$db_server) {
 
 while (true) {
     $changed = $sockets;
-    socket_select($changed, $write = NULL, $except = NULL, NULL); //have some issues here for connect
+    $write = NULL;
+    $except = NULL;
+    socket_select($changed, $write, $except, NULL); //have some issues here for connect
     foreach ($changed as $socket) {
         if ($socket == $master) {
             $client = socket_accept($master);
@@ -375,8 +377,8 @@ function do_unsubscribe($user, $request) {
     $cid = mysql_real_escape_string($user->id);
     $resource = $request['resource'];
     
-    $result = mysql_command(sprintf("DELETE FROM subscribe (rid, cid) VALUES ('%s', '%s')",
-                mysql_real_escape_string($resource), $cid));
+    $result = mysql_command(sprintf("DELETE FROM subscribe WHERE rid='%s' AND cid='%s'",
+                mysql_real_escape_string($resource), $cid)); //(rid, cid) VALUES ('%s', '%s')",
     if (!$result) {
         return array('code' => 'failed', 'reason' => 'failed to unsubscribe the client from the resource');
     }
