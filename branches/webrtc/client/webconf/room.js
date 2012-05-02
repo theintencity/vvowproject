@@ -69,6 +69,7 @@ var room = {
     
     // webrtc PeerConnection indexed by the other user-id
     webrtc_peer_connections: {},
+
     
     //-------------------------------------------
     // METHODS invoked by restserver
@@ -137,6 +138,9 @@ var room = {
             room.on_rx_quality_update(request);
         } else if (request.notify == "NOTIFY" && request.resource == "/webconf/" + room.room_id + "/userlist/" + room.user_id) {
             room.on_webrtc_connection_notify(request);
+
+            
+    
         }
     },
 
@@ -415,10 +419,12 @@ var room = {
     
     leave: function() {
       if (this.user_id != null) {
+        this.unsubscribe_my_user();
         restserver.send({"method": "DELETE", "resource": "/webconf/" + this.room_id + "/userlist/" + this.user_id});
         this.user_id = null;
         this.user_name = null;
       }
+      this.unsubscribe_room();
       this.delete_conference();
       $("chat-history").innerHTML = "";
       this.set_preferences(this.get_default_preferences());
@@ -426,6 +432,11 @@ var room = {
       if (this.send_rx_quality_timer != null) {
         clearInterval(this.send_rx_quality_timer);
         this.send_rx_quality_timer = null;
+      }
+      if (this.webrtc_local_stream != null) {
+      	log("webrtc - removing local stream");
+        this.webrtc_local_stream.stop();
+        this.webrtc_local_stream = null;
       }
     },
     
@@ -809,6 +820,18 @@ var room = {
     subscribe_my_user: function() {
         restserver.send({"method": "SUBSCRIBE", "resource": "/webconf/" + this.room_id + "/userlist/" + this.user_id});
     },
+
+    unsubscribe_my_user: function() {
+        restserver.send({"method": "UNSUBSCRIBE", "resource": "/webconf/" + this.room_id + "/userlist/" + this.user_id + "/rxquality"});
+        restserver.send({"method": "UNSUBSCRIBE", "resource": "/webconf/" + this.room_id + "/userlist/" + this.user_id});
+    },
+
+    unsubscribe_room: function() {
+    	restserver.send({"method": "UNSUBSCRIBE", "resource": "/webconf/" + this.room_id + "/userlist"});
+	restserver.send({"method": "UNSUBSCRIBE", "resource": "/webconf/" + this.room_id + "/presentation"});
+	restserver.send({"method": "UNSUBSCRIBE", "resource": "/webconf/" + this.room_id + "/chathistory"});
+	restserver.send({"method": "UNSUBSCRIBE", "resource": "/webconf/" + this.room_id});
+    },
     
     get_userlist: function() {
         restserver.send({"method": "GET", "resource": "/webconf/" + this.room_id + "/userlist"}, 
@@ -863,8 +886,8 @@ var room = {
         
         if (this.preferences.enable_webrtc && this.has_webrtc) {
             if (user.id != this.user_id) {
-                log("webrtc - creating " + user.id);
-                
+                log("webrtc - creating local:" + this.user_id + " remote:" + user.id);
+
                 if (this.user_id < user.id) {
                     if (this.webrtc_peer_connections[user.id] === undefined) {
                         this.create_webrtc_peer_connection(user.id);
@@ -873,6 +896,9 @@ var room = {
                         this.webrtc_peer_connections[user.id].addStream(this.webrtc_local_stream);
                     }
                 }
+		else {
+		    log("webrtc - letting the other create the SDP");
+		}
             }
         }
         
@@ -937,6 +963,9 @@ var room = {
             var url = webkitURL.createObjectURL(stream);
             video.setAttribute('src', url);
         }
+	if (this.webrtc_local_stream != null) {
+	    this.webrtc_peer_connections[user_id].addStream(this.webrtc_local_stream);
+	}
     },
     
     on_webrtc_removestream: function(user_id) {
@@ -1157,6 +1186,13 @@ var room = {
             video.src = null;
         }
         if (user_id == this.user_id && this.webrtc_local_stream != null) {
+	    log("webrtc - stopping local stream");
+	    for (var s=0; s<room.userlist.length; ++s) {
+	        var user = room.userlist[s];
+		if (room.webrtc_peer_connections[user.id] != undefined) {
+	    	    room.webrtc_peer_connections[user.id].removeStream(room.webrtc_local_stream);
+		}
+	    }
             this.webrtc_local_stream.stop();
             this.webrtc_local_stream = null;
         }

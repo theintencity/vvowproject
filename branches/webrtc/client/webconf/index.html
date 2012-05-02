@@ -22,7 +22,7 @@
 		<script type="text/javascript" src="videoio.js"></script>
 </head>
 
-<body onload="room.init(); restserver.init(room.on_open, null, room.on_notify, 'div-connecting', 'span-connecting')">
+<body onload="room.init(); restserver.init(room.on_open, null, room.on_notify, 'div-connecting', 'span-connecting'),document.getElementById('login_name').focus()">
 
 <!-- 
 The connecting prompt displays with z-index 100
@@ -228,8 +228,8 @@ The main view has many tabs: main, conference, preferences, help.
           <input type="checkbox" id="change_show_footer" checked
 						title="Display the bottom project resources box"/>
         </td></tr><tr><td align="right"><b>(new)</b> Enable WebRTC when available:</td><td>
-          <input type="checkbox" id="change_enable_webrtc" checked
-						title="Enable WebRTC extension if available in the browser"/>
+          <input type="checkbox" id="change_enable_webrtc" 
+						title="Enable WebRTC extension if available in the browser" onclick="$('change_enable_flashplayer').checked = !$('change_enable_webrtc').checked"/>
         </td></tr><tr><td align="right"><b>(new)</b> Enable Flash Player when available:</td><td>
           <input type="checkbox" id="change_enable_flashplayer" checked
 						title="Enable Flash Player plugin if available in the browser"/>
