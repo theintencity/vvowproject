@@ -32,7 +32,9 @@ if (!$db_server) {
 
 while (true) {
     $changed = $sockets;
-    socket_select($changed, $write = NULL, $except = NULL, NULL); //have some issues here for connect
+    $write = NULL;
+    $except = NULL;
+    socket_select($changed, $write, $except, NULL); //have some issues here for connect
     foreach ($changed as $socket) {
         if ($socket == $master) {
             $client = socket_accept($master);
@@ -375,7 +377,7 @@ function do_unsubscribe($user, $request) {
     $cid = mysql_real_escape_string($user->id);
     $resource = $request['resource'];
     
-    $result = mysql_command(sprintf("DELETE FROM subscribe (rid, cid) VALUES ('%s', '%s')",
+    $result = mysql_command(sprintf("DELETE FROM subscribe WHERE rid='%s' AND cid='%s'",
                 mysql_real_escape_string($resource), $cid));
     if (!$result) {
         return array('code' => 'failed', 'reason' => 'failed to unsubscribe the client from the resource');
@@ -410,7 +412,7 @@ function do_notify($user, $request, $method = NULL) {
         // TODO: also send to parent resource
     } else {
         // end to end notify from one client to others
-        $notify = array("notify" => "NOTIFY", "resource" => $request["resource"], "data" => $request["data"]);
+        $notify = array("notify" => "NOTIFY", "resource" => $request["resource"], "data" => $request["data"], "from" => $user->id);
     }
     
     $param = json_encode($notify);
