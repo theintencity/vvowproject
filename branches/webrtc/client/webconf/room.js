@@ -1134,9 +1134,22 @@ var room = {
                 try {
                     log("webrtc - getUserMedia called");
                     if (this.webrtc_local_stream == null) {
-                        navigator.webkitGetUserMedia("video,audio",
-                            function(stream) { room.onUserMediaSuccess(stream); },
-                            function(error) { room.onUserMediaError(error); });
+                        try {
+                            navigator.webkitGetUserMedia({"video": true, "audio": true},
+                                function(stream) { room.onUserMediaSuccess(stream); },
+                                function(error) { room.onUserMediaError(error); });
+                        }
+                        catch (e) {
+                            if ((e instanceof DOMException) && e.name == "NOT_SUPPORTED_ERR") {
+                                log("webrtc - getUserMedia new style API failed, trying old");
+                                navigator.webkitGetUserMedia("video,audio",
+                                    function(stream) { room.onUserMediaSuccess(stream); },
+                                    function(error) { room.onUserMediaError(error); });
+                            }
+                            else {
+                                log("webrtc - getUserMedia failed: " + e);
+                            }
+                        }
                     }
                     else {
                         this.onUserMediaSuccess(this.webrtc_local_stream);
