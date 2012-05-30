@@ -61,6 +61,16 @@ var room = {
     // online user list
     online_userlist: [],
     
+    // has webrtc or not?
+    has_webrtc: false,
+    
+    // webrtc local stream
+    webrtc_local_stream: null,
+    
+    // webrtc PeerConnection indexed by the other user-id
+    webrtc_peer_connections: {},
+
+    
     //-------------------------------------------
     // METHODS invoked by restserver
     //-------------------------------------------
@@ -126,6 +136,11 @@ var room = {
                 room.on_presenter_mouse_move(request);
         } else if (request.notify == "UPDATE" && request.resource == "/webconf/" + room.room_id + "/userlist/" + room.user_id + "/rxquality") {
             room.on_rx_quality_update(request);
+        } else if (request.notify == "NOTIFY" && request.resource == "/webconf/" + room.room_id + "/userlist/" + room.user_id) {
+            room.on_webrtc_connection_notify(request);
+
+            
+    
         }
     },
 
@@ -134,6 +149,12 @@ var room = {
     //-------------------------------------------
     
     init: function() {
+        try {
+            this.has_webrtc = (typeof navigator.webkitGetUserMedia != "undefined");
+        } catch (e) {
+            // ignore
+        }
+        
         this.preferences = this.get_default_preferences();
         
         //room.user_list_init();
@@ -145,6 +166,10 @@ var room = {
         
         this.show_media_quality(false);
         this.show_network_quality(null, false);
+        
+        //navigator.webkitGetUserMedia("video,audio",
+        //    function(stream) { room.onUserMediaSuccess(stream); },
+        //    function(error) { room.onUserMediaError(error); });
     },
     
     create: function() {
@@ -240,6 +265,10 @@ var room = {
                             $("document-icon").style.visibility = "hidden";
                             //$("add-icon").style.visibility = "hidden";
                         }
+                        if (response.entity.enable_webrtc === undefined)
+                            response.entity.enable_webrtc = true;
+                        if (response.entity.enable_flashplayer === undefined)
+                            response.entity.enable_flashplayer = true;
                         room.set_preferences(response.entity);
                         room.on_select_tab("conference");
                         room.on_joined();
@@ -390,10 +419,12 @@ var room = {
     
     leave: function() {
       if (this.user_id != null) {
+        this.unsubscribe_my_user();
         restserver.send({"method": "DELETE", "resource": "/webconf/" + this.room_id + "/userlist/" + this.user_id});
         this.user_id = null;
         this.user_name = null;
       }
+      this.unsubscribe_room();
       this.delete_conference();
       $("chat-history").innerHTML = "";
       this.set_preferences(this.get_default_preferences());
@@ -401,6 +432,11 @@ var room = {
       if (this.send_rx_quality_timer != null) {
         clearInterval(this.send_rx_quality_timer);
         this.send_rx_quality_timer = null;
+      }
+      if (this.webrtc_local_stream != null) {
+      	log("webrtc - removing local stream");
+        this.webrtc_local_stream.stop();
+        this.webrtc_local_stream = null;
       }
     },
     
@@ -434,7 +470,7 @@ var room = {
     //-------------------------------------------
     // METHODS preferences
     //-------------------------------------------
-        
+    
     subscribe_preferences: function() {
         restserver.send({"method": "SUBSCRIBE", "resource": "/webconf/" + this.room_id});
     },
@@ -442,7 +478,8 @@ var room = {
     get_default_preferences: function() {
         return {"name": null, "password": null, "owner": null,
                 "allow_html": false, "video_auto": false, "persistent": false,
-                "show_header": true, "show_footer": true, "video_controls": false};  
+                "show_header": true, "show_footer": true, "video_controls": false,
+                "enable_webrtc": true, "enable_flashplayer": true};  
     },
     
     delete_conference: function(message) {
@@ -508,9 +545,19 @@ var room = {
                 }
             }
         }
+        if (old.enable_webrtc && !data.enable_webrtc) {
+            this.info("WebRTC will not be used");
+        } else if (!old.enable_webrtc && data.enable_webrtc) {
+            this.info("WebRTC will be used when available in participant's web browser");
+        }
+        if (old.enable_flashplayer && !data.enable_flashplayer) {
+            this.info("Flash Player will not be used");
+        } else if (!old.enable_flashplayer && data.enable_flashplayer) {
+            this.info("Flash Player will be used when available in participant's web browser");
+        }
     },
     
-    change_conference_settings: function(persistent, video_auto, allow_html, show_header, show_footer, video_controls) {
+    change_conference_settings: function(persistent, video_auto, allow_html, show_header, show_footer, video_controls, enable_webrtc, enable_flashplayer) {
         if (this.is_moderator) {
             var data = {};
             for (var s in this.preferences) {
@@ -522,6 +569,8 @@ var room = {
             data.allow_html = allow_html;
             data.show_header = show_header;
             data.show_footer = show_footer;
+            data.enable_webrtc = enable_webrtc;
+            data.enable_flashplayer = enable_flashplayer;
             $("save-conference-settings").value = "Saving...";
             restserver.send({"method": "PUT", "resource": "/webconf/" + this.room_id, "persistent" : persistent, "entity": data},
                 function(response) {
@@ -771,6 +820,18 @@ var room = {
     subscribe_my_user: function() {
         restserver.send({"method": "SUBSCRIBE", "resource": "/webconf/" + this.room_id + "/userlist/" + this.user_id});
     },
+
+    unsubscribe_my_user: function() {
+        restserver.send({"method": "UNSUBSCRIBE", "resource": "/webconf/" + this.room_id + "/userlist/" + this.user_id + "/rxquality"});
+        restserver.send({"method": "UNSUBSCRIBE", "resource": "/webconf/" + this.room_id + "/userlist/" + this.user_id});
+    },
+
+    unsubscribe_room: function() {
+    	restserver.send({"method": "UNSUBSCRIBE", "resource": "/webconf/" + this.room_id + "/userlist"});
+	restserver.send({"method": "UNSUBSCRIBE", "resource": "/webconf/" + this.room_id + "/presentation"});
+	restserver.send({"method": "UNSUBSCRIBE", "resource": "/webconf/" + this.room_id + "/chathistory"});
+	restserver.send({"method": "UNSUBSCRIBE", "resource": "/webconf/" + this.room_id});
+    },
     
     get_userlist: function() {
         restserver.send({"method": "GET", "resource": "/webconf/" + this.room_id + "/userlist"}, 
@@ -823,7 +884,35 @@ var room = {
             this.resize_handler();
         }
         
+        if (this.preferences.enable_webrtc && this.has_webrtc) {
+            if (user.id != this.user_id) {
+                log("webrtc - creating local:" + this.user_id + " remote:" + user.id);
+
+                if (this.user_id < user.id) {
+                    if (this.webrtc_peer_connections[user.id] === undefined) {
+                        this.create_webrtc_peer_connection(user.id);
+                    }
+                    if (this.webrtc_local_stream != null) {
+                        this.webrtc_peer_connections[user.id].addStream(this.webrtc_local_stream);
+                    }
+                }
+		else {
+		    log("webrtc - letting the other create the SDP");
+		}
+            }
+        }
+        
         this.show_network_quality(user.id, true);
+    },
+    
+    create_webrtc_peer_connection: function(user_id) {
+        log("create peer connection for " + user_id);
+        var pc = new webkitDeprecatedPeerConnection("STUN stun.l.google.com:19302", function(message) { room.on_webrtc_send_message(user_id, message);});
+        this.webrtc_peer_connections[user_id] = pc;
+        pc.onconnecting = function(message) { room.on_webrtc_connecting(user_id, message); };
+        pc.onopen = function(message) { room.on_webrtc_open(user_id, message); };
+        pc.onaddstream = function(event) { room.on_webrtc_addstream(user_id, event.stream); };
+        pc.onremovestream = function(event) { room.on_webrtc_removestream(user_id); };
     },
     
     on_userlist_removed: function(user) {
@@ -834,6 +923,79 @@ var room = {
         this.remove_video(user.id);
         this.resize_handler();
         this.show_network_quality(user.id, false);
+        
+        if (this.preferences.enable_webrtc && this.has_webrtc) {
+            if (this.webrtc_peer_connections[user.id] !== undefined) {
+                log("webrtc - closing " + user.id);
+                var pc = this.webrtc_peer_connections[user.id];
+                delete this.webrtc_peer_connections[user.id];
+                try {
+                    pc.close();
+                } catch (e) {
+                    log("webrtc - failed to close PeerConnection: " + e);
+                }
+            }
+        }
+    },
+    
+    on_webrtc_send_message: function(user_id, message) {
+        // log("webrtc - send message (" + user_id + "," + message + ")");
+        log("webrtc - send message (" + user_id + ", ...)");
+        log(message);
+        
+        message = Base64.encode(message);
+        restserver.send({"method": "NOTIFY", "resource": "/webconf/" + this.room_id + "/userlist/" + user_id,
+                        "data": {"from": this.user_id, "message": message}})
+    },
+    
+    on_webrtc_connecting: function(user_id, message) {
+        log("webrtc - onconnecting(" + user_id + "," + message + ")");
+    },
+    
+    on_webrtc_open: function(user_id, message) {
+        log("webrtc - onopen(" + user_id + "," + message + ")");
+    },
+    
+    on_webrtc_addstream: function(user_id, stream) {
+        log("webrtc - onaddstream(" + user_id + ",...)");
+        var video = $("video-webrtc-" + user_id);
+        if (video) {
+            var url = webkitURL.createObjectURL(stream);
+            video.setAttribute('src', url);
+        }
+	if (this.webrtc_local_stream != null) {
+	    this.webrtc_peer_connections[user_id].addStream(this.webrtc_local_stream);
+	}
+    },
+    
+    on_webrtc_removestream: function(user_id) {
+        log("webrtc - onremovestream(" + user_id + ")");
+        var video = $("video-webrtc-" + user_id);
+        if (video) {
+            video.setAttribute('src', '');
+        }
+    },
+    
+    on_webrtc_connection_notify: function(request) {
+        if (request.data) {
+            var user_id = request.data['from'];
+            var message = request.data['message'];
+            //setTimeout(function() { room.on_webrtc_received(user_id, message); }, (500+Math.random()*1000));
+            room.on_webrtc_received(user_id, message);
+        }
+    },
+    
+    on_webrtc_received: function(user_id, message) {
+        message = Base64.decode(message);
+        // log('webrtc - set connection ' + message);
+        log('webrtc - received from ' + user_id);
+        log(message);
+        if (this.webrtc_peer_connections[user_id] === undefined) {
+            this.create_webrtc_peer_connection(user_id);
+        }
+        var pc = this.webrtc_peer_connections[user_id];
+        log("process signaling message on " + pc);
+        pc.processSignalingMessage(message);
     },
     
     on_userlist_click: function(user) {
@@ -921,6 +1083,8 @@ var room = {
     },
     
     add_video: function(user_id) {
+        video_added = true;
+        
         var id = "user-video-" + user_id;
         if ($(id)) {
             return; // already added
@@ -940,15 +1104,112 @@ var room = {
         };
         $("videos-box").appendChild(child);
         
-        var flashVars = 'cameraQuality=80&cameraWidth=240&cameraHeight=180' + (this.preferences.video_controls ? '&controls=true' : '');
-        if (VideoIO) {
-            child.innerHTML = getVideoIO("video-" + user_id, flashVars);
-        } else {
-            child.innerHTML = '<span style="color: #ffffff;">You need Flash Player 10.0 or higher for this content</span>';
+        var video_added = false;
+        if (this.preferences.enable_flashplayer) {
+            // prefer Flash Player
+            video_added = true;
+            var flashVars = 'cameraQuality=80&cameraWidth=240&cameraHeight=180' + (this.preferences.video_controls ? '&controls=true' : '');
+            if (VideoIO) {
+                child.innerHTML = getVideoIO("video-" + user_id, flashVars);
+            } else {
+                child.innerHTML = '<span style="color: #ffffff;">You need Flash Player 10.0 or higher for this content</span>';
+            }
+        }
+        
+        if (this.preferences.enable_webrtc && this.has_webrtc) {
+            // try webrtc
+            if (!video_added) {
+                // if Flash local view is added, don't add again
+                log("webrtc - adding video");
+                var video = document.createElement("video");
+                video.id = "video-webrtc-" + user_id;
+                video.style.width = "100%";
+                video.style.height = "100%";
+                video.autoplay = "autoplay";
+                child.appendChild(video);
+            }
+            
+            if (user_id == this.user_id) {
+                // publish
+                try {
+                    log("webrtc - getUserMedia called");
+                    if (this.webrtc_local_stream == null) {
+                        try {
+                            navigator.webkitGetUserMedia({"video": true, "audio": true},
+                                function(stream) { room.onUserMediaSuccess(stream); },
+                                function(error) { room.onUserMediaError(error); });
+                        }
+                        catch (e) {
+                            if ((e instanceof DOMException) && e.name == "NOT_SUPPORTED_ERR") {
+                                log("webrtc - getUserMedia new style API failed, trying old");
+                                navigator.webkitGetUserMedia("video,audio",
+                                    function(stream) { room.onUserMediaSuccess(stream); },
+                                    function(error) { room.onUserMediaError(error); });
+                            }
+                            else {
+                                log("webrtc - getUserMedia failed: " + e);
+                            }
+                        }
+                    }
+                    else {
+                        this.onUserMediaSuccess(this.webrtc_local_stream);
+                    }
+                }
+                catch (e) {
+                    log("webrtc - getUserMedia failed: " + e);
+                }
+            }
+            else {
+                // play
+            }
+        }
+    },
+    
+    onUserMediaSuccess: function(stream) {
+        if (stream !== this.webrtc_local_stream) {
+            this.webrtc_local_stream = stream;
+            for (var s=0; s<this.userlist.length; ++s) {
+                var user = this.userlist[s];
+                if (this.webrtc_peer_connections[user.id] != undefined) {
+                    log("webrtc - adding local stream to PeerConnection of " + user.id);
+                    this.webrtc_peer_connections[user.id].addStream(this.webrtc_local_stream);
+                }
+            }
+        }
+        
+        // if local video is displayed
+        var video = $("video-webrtc-" + this.user_id);
+        if (video) {
+            var url = webkitURL.createObjectURL(stream);
+            video.setAttribute('src', url);
+        }
+    },
+    
+    onUserMediaError: function(error) {
+        log("webrtc - failed to get access to local media: " + error.code);
+        if ($("user-checkbox-" + this.user_id).checked) {
+            restserver.send({"method": "PUT", "resource": "/webconf/" + this.room_id + "/userlist/" + this.user_id,
+                "entity": {"name": this.user_name, "video": false, "stream_url": null}});
         }
     },
 
     remove_video: function(user_id) {
+        var video = $("video-webrtc-" + user_id);
+        if (video) {
+            video.setAttribute('src', '');
+        }
+        if (user_id == this.user_id && this.webrtc_local_stream != null) {
+	    log("webrtc - stopping local stream");
+	    for (var s=0; s<room.userlist.length; ++s) {
+	        var user = room.userlist[s];
+		if (room.webrtc_peer_connections[user.id] != undefined) {
+	    	    room.webrtc_peer_connections[user.id].removeStream(room.webrtc_local_stream);
+		}
+	    }
+            this.webrtc_local_stream.stop();
+            this.webrtc_local_stream = null;
+        }
+        
         var child = $("user-video-" + user_id);
         if (child) {
             $("videos-box").removeChild(child);

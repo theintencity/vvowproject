@@ -17,6 +17,9 @@ span.copyright a {
   text-decoration: none;
 }
 
+video {
+  -webkit-transform: scaleX(-1);
+}
 span.footer {
   color: #808080; 
   font-size: 11px; 
