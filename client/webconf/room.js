@@ -925,14 +925,14 @@ var room = {
         this.show_network_quality(user.id, false);
         
         if (this.preferences.enable_webrtc && this.has_webrtc) {
-            if (this.webrtc_peer_connections[user.id] != undefined) {
+            if (this.webrtc_peer_connections[user.id] !== undefined) {
                 log("webrtc - closing " + user.id);
                 var pc = this.webrtc_peer_connections[user.id];
                 delete this.webrtc_peer_connections[user.id];
                 try {
                     pc.close();
                 } catch (e) {
-                    log("webrtc - failed to close " + e);
+                    log("webrtc - failed to close PeerConnection: " + e);
                 }
             }
         }
@@ -1183,7 +1183,7 @@ var room = {
     remove_video: function(user_id) {
         var video = $("video-webrtc-" + user_id);
         if (video) {
-            video.src = null;
+            video.setAttribute('src', '');
         }
         if (user_id == this.user_id && this.webrtc_local_stream != null) {
 	    log("webrtc - stopping local stream");
