@@ -16,9 +16,9 @@ $users = array();
 $debug = true;
 
 $db_hostname = '127.0.0.1';
-$db_database = 'webconf';
-$db_username = 'user';
-$db_password = 'pass';
+$db_database = 'restserver';
+$db_username = 'root';
+$db_password = 'mypassword';
 
 //-----------------------------------------------
 // Main: connect database, start websocket server
@@ -378,7 +378,7 @@ function do_unsubscribe($user, $request) {
     $resource = $request['resource'];
     
     $result = mysql_command(sprintf("DELETE FROM subscribe WHERE rid='%s' AND cid='%s'",
-                mysql_real_escape_string($resource), $cid)); //(rid, cid) VALUES ('%s', '%s')",
+                mysql_real_escape_string($resource), $cid));
     if (!$result) {
         return array('code' => 'failed', 'reason' => 'failed to unsubscribe the client from the resource');
     }
@@ -412,7 +412,7 @@ function do_notify($user, $request, $method = NULL) {
         // TODO: also send to parent resource
     } else {
         // end to end notify from one client to others
-        $notify = array("notify" => "NOTIFY", "resource" => $request["resource"], "data" => $request["data"]);
+        $notify = array("notify" => "NOTIFY", "resource" => $request["resource"], "data" => $request["data"], "from" => $user->id);
     }
     
     $param = json_encode($notify);
