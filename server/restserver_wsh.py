@@ -18,6 +18,7 @@
 import sys, logging, traceback, json, threading
 from mod_pywebsocket import msgutil, handshake
 from restserver import Sqlite3Database as Database, Handler
+# from restserver import InmemoryDatabase as Database, Handler
 # alternatively: use PostgreSQLDatabase or InmemoryDatabase
 
 logger = logging.getLogger('restserver')

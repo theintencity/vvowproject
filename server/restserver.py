@@ -139,8 +139,8 @@ class Sqlite3Database():
 
     def reset(self):
         # cleanup the subscribe table, since there are no subscription on startup
-        self.commit("DELETE FROM subscribe");
-        self.commit("DELETE FROM resource WHERE cid != ''");
+        self.commit("DELETE FROM subscribe")
+        self.commit("DELETE FROM resource WHERE cid != ''")
         
     def close(self):
         if self.cursor:
@@ -299,7 +299,8 @@ class Resource():
 
     def locate(self, ridparts, create=False):
         if isinstance(ridparts, basestring):
-            ridparts = ridparts.split('/')[1:]
+            ridparts = ridparts.split('/')
+            if ridparts[0] == '': ridparts = ridparts[1:]
         resource = self
         for part in ridparts:
             if part in resource.children:
@@ -385,7 +386,8 @@ class InmemoryDatabase():
             resource = self.root.locate(rid)
             if resource and resource.entity is not None:
                 raise ValueError('resource already exists')
-        ridparts = rid.split('/')[1:]
+        ridparts = rid.split('/')
+        if ridparts[0] == '': ridparts = ridparts[1:]
         leaf = ridparts[-1]
         parent = self.root.locate(ridparts[:-1], create=True)
         if leaf not in parent.children:
@@ -457,7 +459,8 @@ class InmemoryDatabase():
         parent = self.root.locate(prid)
         return len(parent.children) if parent else 0
     
-    def get_all(self, prid=None, cid=None, params=None):
+    # select_what is ignored
+    def get_all(self, prid=None, cid=None, params=None, select_what=None):
         logger.debug("get_all\n%s"%(self,))
         if params is None:
             if prid is not None and cid is not None:
@@ -474,23 +477,31 @@ class InmemoryDatabase():
             elif cid is not None:
                 if cid in self.context.resources:
                     resources = self.context.resources[cid]
-                    return [rid for rid in resources]
+                    return [(rid) for rid in resources]
         else: # params
             parent = self.root.locate(prid)
             if parent:
-                iterator = (rid for rid, resource in parent.children.iteritems() if resource.entity is not None)
-                length = len(list(iterator))
-                if 'like' in params: # like only on last part
-                    leaf = params['like'].split('/')[-1].replace('%', '(.*)')
-                    iterator = (x for x in iterator if re.search(leaf, x))
-                if 'order' in params and params['order'].upper() == 'DESC':
-                    iterator = reversed(iterator)
-                start, end = 0, length
-                if 'offset' in params:
-                    start = int(params['offset'])
-                if 'limit' in params:
-                    end = start + int(params['limit'])
-                return [rid for index, rid in enumerate(iterator) if index >= start and index < end]
+                iterator = [[rid, resource] for rid, resource in parent.children.iteritems() if resource.entity is not None]
+                length = len(iterator)
+                if 'deep' in params and params['deep'] == '0':
+                    return [[length]]
+                else:
+                    if 'deep' in params and params['deep'] == '2':
+                        iterator = [[rid, resource.ctype, resource.entity] for rid, resource in iterator]
+                    else:
+                        iterator = [[rid] for rid, resource in iterator]
+                    
+                    if 'like' in params: # like only on last part
+                        leaf = params['like'].split('/')[-1].replace('%', '(.*)')
+                        iterator = (x for x in iterator if re.search(leaf, x[0]))
+                    if 'order' in params and params['order'].upper() == 'DESC':
+                        iterator = reversed(iterator)
+                    start, end = 0, length
+                    if 'offset' in params:
+                        start = int(params['offset'])
+                    if 'limit' in params:
+                        end = start + int(params['limit'])
+                    return [row for index, row in enumerate(iterator) if index >= start and index < end]
         return []
 
     def delete_all(self, cid, prid=None):
@@ -520,13 +531,13 @@ class InmemoryDatabase():
     def get_listeners(self, rid):
         logger.debug("get_listeners\n%s"%(self,))
         resource = self.root.locate(rid)
-        return [cid for cid in resource.listeners] if resource else []
+        return [[cid] for cid in resource.listeners] if resource else []
     
     def get_listener_resources(self, cid):
         logger.debug("get_listener_resources\n%s"%(self,))
         if cid in self.context.subscribes:
             subscribes = self.context.subscribes[cid]
-            return [rid for rid in subscribes]
+            return [[rid] for rid in subscribes]
         return []
     
     def delete_listeners(self, cid, rid=None):
@@ -538,7 +549,7 @@ class InmemoryDatabase():
         else:
             if cid in self.context.subscribes:
                 subscribes = self.context.subscribes[cid]
-                for rid, resource in subscribes:
+                for rid, resource in subscribes.iteritems():
                     resource.listeners.discard(cid)
                 self.context.subscribes.pop(cid, None)
     
