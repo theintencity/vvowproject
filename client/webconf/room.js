@@ -137,10 +137,12 @@ var room = {
         } else if (request.notify == "UPDATE" && request.resource == "/webconf/" + room.room_id + "/userlist/" + room.user_id + "/rxquality") {
             room.on_rx_quality_update(request);
         } else if (request.notify == "NOTIFY" && request.resource == "/webconf/" + room.room_id + "/userlist/" + room.user_id) {
-            room.on_webrtc_connection_notify(request);
-
-            
-    
+	    if (request.data.checked) {
+	        room.on_userlist_clicked(request);
+	    }
+	    else {
+                room.on_webrtc_connection_notify(request);
+	    }
         }
     },
 
@@ -1000,16 +1002,24 @@ var room = {
     
     on_userlist_click: function(user) {
         if (this.is_moderator) {
-            if ($("user-checkbox-" + user.id).checked && !user.video) {
+	    if (user.id == this.user_id) {
                 restserver.send({"method": "PUT", "resource": "/webconf/" + this.room_id + "/userlist/" + user.id,
-                    "entity": {"name": user.name, "video": true, "stream_url": null}});
+                    "entity": {"name": this.user_name, "video": $("user-checkbox-" + user.id).checked, "stream_url": null}});
             } else {
-                restserver.send({"method": "PUT", "resource": "/webconf/" + this.room_id + "/userlist/" + user.id,
-                    "entity": {"name": user.name, "video": false, "stream_url": null}});
+                restserver.send({"method": "NOTIFY", "resource": "/webconf/" + this.room_id + "/userlist/" + user.id,
+                    "entity": {"name": user.name, "video": $("user-checkbox-" + user.id).checked, "stream_url": null}, "data": {"checked": "true"}});
             }
+	}
+    },
+   
+    on_userlist_clicked: function(request) {
+        if ($("user-checkbox-" + this.user_id).checked) {
+	    restserver.send({"method": "PUT", "resource": "/webconf/" + this.room_id + "/userlist/" + this.user_id, "entity": {"name": this.user_name, "video": false, "stream_url": null}});
+        } else {
+            restserver.send({"method": "PUT", "resource": "/webconf/" + this.room_id + "/userlist/" + this.user_id, "entity": {"name": this.user_name, "video": true, "stream_url": null}});
         }
     },
-    
+
     get_user_by_id: function(id) {
         for (var s=0; s<this.userlist.length; ++s) {
             if (this.userlist[s].id == id) {
@@ -1180,6 +1190,7 @@ var room = {
         // if local video is displayed
         var video = $("video-webrtc-" + this.user_id);
         if (video) {
+	    video.style.webkitTransform = "scaleX(-1)";
             var url = webkitURL.createObjectURL(stream);
             video.setAttribute('src', url);
         }
