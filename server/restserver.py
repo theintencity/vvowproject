@@ -264,7 +264,7 @@ class Sqlite3Database():
 # inmemory
 
 import sets
-from collection import OrderedDict
+from collections import OrderedDict
 
 class Resource():
     '''
@@ -546,10 +546,16 @@ class InmemoryDatabase():
 
 # postgresql
 
-import psycopg2
+try:
+  import psycopg2
+except:
+  psycopg2 = None
+
 
 class PostgreSQLDatabase():
     def __init__(self, **kwargs):
+        if not psycopg2:
+            raise NotImplementedError
         self.kwargs = kwargs
         self._connect()
         self._create()
