@@ -890,13 +890,14 @@ var room = {
             if (user.id != this.user_id) {
                 log("webrtc - creating local:" + this.user_id + " remote:" + user.id);
 
-                if (this.user_id < user.id) {
+                if (this.user_id > user.id) {
                     if (this.webrtc_peer_connections[user.id] === undefined) {
                         this.create_webrtc_peer_connection(user.id);
                     }
                     if (this.webrtc_local_stream != null) {
                         this.webrtc_peer_connections[user.id].addStream(this.webrtc_local_stream);
                     }
+		    room.webrtc_set_call(user.id);
                 }
 		else {
 		    log("webrtc - letting the other create the SDP");
@@ -909,14 +910,34 @@ var room = {
     
     create_webrtc_peer_connection: function(user_id) {
         log("create peer connection for " + user_id);
-        var pc = new webkitDeprecatedPeerConnection("STUN stun.l.google.com:19302", function(message) { room.on_webrtc_send_message(user_id, message);});
+        var pc = new webkitRTCPeerConnection({iceServers:[{url:"stun://stun.l.google.com:19302"}]},null);
         this.webrtc_peer_connections[user_id] = pc;
         pc.onconnecting = function(message) { room.on_webrtc_connecting(user_id, message); };
         pc.onopen = function(message) { room.on_webrtc_open(user_id, message); };
         pc.onaddstream = function(event) { room.on_webrtc_addstream(user_id, event.stream); };
         pc.onremovestream = function(event) { room.on_webrtc_removestream(user_id); };
+        pc.onicecandidate = function(event) { if (event.candidate) room.on_webrtc_send_message(user_id, 'candidate', event.candidate);};
+
+	if (this.webrtc_local_stream != null) {
+	    pc.addStream(this.webrtc_local_stream);
+	}
     },
     
+    webrtc_set_call: function (user_id) {
+        log("Creating offer");
+        pc = this.webrtc_peer_connections[user_id];
+        pc.createOffer(function(offer) { pc.setLocalDescription(offer);
+            room.on_webrtc_send_message(user_id, 'offer', offer); });
+    },
+
+    webrtc_receive_call: function (user_id, message) {
+        log('Offer received: ' + message);
+        pc = this.webrtc_peer_connections[user_id];
+        pc.setRemoteDescription(new RTCSessionDescription(message));
+        pc.createAnswer(function(answer) { pc.setLocalDescription(answer);
+            room.on_webrtc_send_message(user_id, 'answer', answer); });
+    },
+
     on_userlist_removed: function(user) {
         var child = $("user-checkbox-" + user.id);
         if (child != null) {
@@ -940,14 +961,13 @@ var room = {
         }
     },
     
-    on_webrtc_send_message: function(user_id, message) {
-        // log("webrtc - send message (" + user_id + "," + message + ")");
+    on_webrtc_send_message: function(user_id, type, message) {
         log("webrtc - send message (" + user_id + ", ...)");
         log(message);
         
-        message = Base64.encode(message);
+        message = Base64.encode(message.toJSONString());
         restserver.send({"method": "NOTIFY", "resource": "/webconf/" + this.room_id + "/userlist/" + user_id,
-                        "data": {"from": this.user_id, "message": message}})
+                        "data": {"from": this.user_id, "type": type, "message": message}})
     },
     
     on_webrtc_connecting: function(user_id, message) {
@@ -981,23 +1001,27 @@ var room = {
     on_webrtc_connection_notify: function(request) {
         if (request.data) {
             var user_id = request.data['from'];
+	    var type = request.data['type'];
             var message = request.data['message'];
-            //setTimeout(function() { room.on_webrtc_received(user_id, message); }, (500+Math.random()*1000));
-            room.on_webrtc_received(user_id, message);
+            room.on_webrtc_received(user_id, type, message);
         }
     },
     
-    on_webrtc_received: function(user_id, message) {
-        message = Base64.decode(message);
-        // log('webrtc - set connection ' + message);
-        log('webrtc - received from ' + user_id);
+    on_webrtc_received: function(user_id, type, message) {
+        message = JSON.parse(Base64.decode(message));
+        log('webrtc - received ' + type + ' from ' + user_id);
         log(message);
         if (this.webrtc_peer_connections[user_id] === undefined) {
             this.create_webrtc_peer_connection(user_id);
         }
         var pc = this.webrtc_peer_connections[user_id];
         log("process signaling message on " + pc);
-        pc.processSignalingMessage(message);
+        if (type == 'offer')
+            this.webrtc_receive_call(user_id, message);
+        else if (type == 'answer')
+            pc.setRemoteDescription(new RTCSessionDescription(message));
+        else if (type == 'candidate')
+            pc.addIceCandidate(new RTCIceCandidate(message));
     },
     
     on_userlist_click: function(user) {
@@ -1180,9 +1204,10 @@ var room = {
             this.webrtc_local_stream = stream;
             for (var s=0; s<this.userlist.length; ++s) {
                 var user = this.userlist[s];
-                if (this.webrtc_peer_connections[user.id] != undefined) {
+                if (this.webrtc_peer_connections[user.id] !== undefined) {
                     log("webrtc - adding local stream to PeerConnection of " + user.id);
                     this.webrtc_peer_connections[user.id].addStream(this.webrtc_local_stream);
+		    room.webrtc_set_call(user.id);
                 }
             }
         }
@@ -1213,8 +1238,9 @@ var room = {
 	    log("webrtc - stopping local stream");
 	    for (var s=0; s<room.userlist.length; ++s) {
 	        var user = room.userlist[s];
-		if (room.webrtc_peer_connections[user.id] != undefined) {
+		if (room.webrtc_peer_connections[user.id] !== undefined) {
 	    	    room.webrtc_peer_connections[user.id].removeStream(room.webrtc_local_stream);
+		    room.webrtc_set_call(user.id);
 		}
 	    }
             this.webrtc_local_stream.stop();
@@ -1915,7 +1941,7 @@ var room = {
             'info': '#808080', 'warn': '#ff0000', 'error': '#ff0000', 'normal': '#000000' },
     
     color: function(user, msg) {
-        return (this.colors[user] != undefined) ?
+        return (this.colors[user] !== undefined) ?
             '<font color="' + this.colors[user] + '">' + msg + '</font>' : msg;
     },
     
